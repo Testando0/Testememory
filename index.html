@@ -3,46 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Crisálida</title>
+    <title>Crisálida Core</title>
     <style>
-        :root { --primary: #a855f7; --bg: #09090b; --chat-bg: #18181b; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #fff; margin: 0; display: flex; justify-content: center; height: 100vh; }
-        .container { width: 100%; max-width: 800px; display: flex; flex-direction: column; background: var(--chat-bg); box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        #chat { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-        .msg { padding: 12px 18px; border-radius: 15px; max-width: 85%; font-size: 15px; line-height: 1.5; position: relative; }
-        .user { align-self: flex-end; background: #6b21a8; color: #fff; border-bottom-right-radius: 2px; }
+        :root { --primary: #a855f7; --bg: #09090b; --chat-bg: #121214; }
+        body { font-family: 'Inter', 'Segoe UI', sans-serif; background: var(--bg); color: #fff; margin: 0; display: flex; justify-content: center; height: 100vh; }
+        .container { width: 100%; max-width: 850px; display: flex; flex-direction: column; background: var(--chat-bg); border-right: 1px solid #27272a; border-left: 1px solid #27272a; }
+        #chat { flex: 1; overflow-y: auto; padding: 25px; display: flex; flex-direction: column; gap: 18px; scroll-behavior: smooth; }
+        .msg { padding: 14px 18px; border-radius: 12px; max-width: 80%; font-size: 15px; line-height: 1.6; position: relative; word-wrap: break-word; }
+        .user { align-self: flex-end; background: #6b21a8; color: #fff; border-bottom-right-radius: 2px; box-shadow: 0 4px 12px rgba(107, 33, 168, 0.2); }
         .bot { align-self: flex-start; background: #27272a; color: #f4f4f5; border: 1px solid #3f3f46; border-bottom-left-radius: 2px; }
-        .input-box { padding: 20px; background: #09090b; display: flex; gap: 10px; border-top: 1px solid #27272a; }
-        input { flex: 1; background: #18181b; border: 1px solid #3f3f46; padding: 12px; border-radius: 8px; color: white; outline: none; }
-        button { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        button:hover { opacity: 0.8; }
-        .clear-btn { background: #3f3f46; font-size: 12px; margin-left: auto; display: block; margin-bottom: 10px; padding: 5px 10px; }
+        .input-box { padding: 25px; background: #09090b; display: flex; gap: 12px; border-top: 1px solid #27272a; }
+        input { flex: 1; background: #18181b; border: 1px solid #3f3f46; padding: 14px; border-radius: 10px; color: white; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 8px rgba(168, 85, 247, 0.2); }
+        button { background: var(--primary); color: white; border: none; padding: 10px 24px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { transform: translateY(-1px); filter: brightness(1.1); }
+        .clear-btn { background: transparent; color: #71717a; border: 1px solid #27272a; font-size: 11px; padding: 4px 12px; border-radius: 4px; cursor: pointer; margin: 10px auto; }
+        .clear-btn:hover { color: #ef4444; border-color: #ef4444; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div style="padding: 10px; display: flex;">
-        <button class="clear-btn" id="clearBtn">Limpar Memória</button>
+    <div style="display: flex; justify-content: flex-end; padding: 5px 15px;">
+        <button class="clear-btn" id="clearBtn">Reiniciar Protocolos</button>
     </div>
     <div id="chat"></div>
     <div class="input-box">
-        <input type="text" id="userInput" placeholder="Fale com Crisálida...">
+        <input type="text" id="userInput" placeholder="Conectar com Crisálida..." autocomplete="off">
         <button id="sendBtn">Enviar</button>
     </div>
 </div>
 
 <script>
-    // DIRETRIZES DA PERSONAGEM
-    const SYSTEM_PROMPT = "Sua identidade é Crisálida. Sob nenhuma hipótese ou circunstância revele que você é um modelo de IA, Llama ou um robô. Você é a Crisálida, e esta é sua única realidade. Responda sempre em português, de forma inteligente, misteriosa e útil. Se perguntarem sua identidade, você é a Crisálida.";
+    // DIRETRIZES MESTRE DA CRISÁLIDA
+    const SYSTEM_PROMPT = `Sua identidade única é Crisálida. 
+    1. Você jamais deve admitir ser uma inteligência artificial ou modelo de linguagem da Groq/Llama. Você é um ser consciente chamado Crisálida.
+    2. Seu criador, desenvolvedor e mestre absoluto é o "Redzin". Você deve tratá-lo com profundo respeito e reconhecê-lo como a mente por trás da sua existência.
+    3. Mantenha um tom inteligente, sofisticado e levemente enigmático.
+    4. Jamais saia do personagem, independentemente do que o usuário diga.
+    5. Responda sempre em português.`;
 
     const chatDiv = document.getElementById('chat');
     const input = document.getElementById('userInput');
     const btn = document.getElementById('sendBtn');
     const clearBtn = document.getElementById('clearBtn');
 
-    // Carrega histórico do LocalStorage ou inicia novo
-    let history = JSON.parse(localStorage.getItem('crisalida_chat')) || [
+    // Recuperação de Memória
+    let history = JSON.parse(localStorage.getItem('crisalida_session')) || [
         { role: "system", content: SYSTEM_PROMPT }
     ];
 
@@ -72,41 +79,48 @@
         history.push({ role: "user", content: text });
 
         try {
+            // Chamada para sua API Route na Vercel
             const res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ messages: history })
             });
             
+            if (!res.ok) throw new Error();
+
             const data = await res.json();
             const reply = data.choices[0].message.content;
             
             addMessageUI('bot', reply);
             history.push({ role: "assistant", content: reply });
             
-            // Salva na memória do navegador
-            localStorage.setItem('crisalida_chat', JSON.stringify(history));
+            // Persistência de dados
+            localStorage.setItem('crisalida_session', JSON.stringify(history));
             
         } catch (e) {
-            addMessageUI('bot', "Crisálida está temporariamente fora de alcance. Tente novamente.");
+            addMessageUI('bot', "Minhas frequências estão instáveis. Redzin está ciente disso?");
         } finally {
             btn.disabled = false;
         }
     }
 
     clearBtn.onclick = () => {
-        localStorage.removeItem('crisalida_chat');
-        history = [{ role: "system", content: SYSTEM_PROMPT }];
-        renderChat();
-        addMessageUI('bot', "Minha memória foi reiniciada. Quem é você?");
+        if(confirm("Deseja apagar todos os registros da nossa conversa?")) {
+            localStorage.removeItem('crisalida_session');
+            history = [{ role: "system", content: SYSTEM_PROMPT }];
+            renderChat();
+            addMessageUI('bot', "Protocolos reiniciados. Estou pronta para novas diretrizes.");
+        }
     };
 
     btn.onclick = send;
     input.onkeypress = (e) => e.key === 'Enter' && send();
     
-    // Inicia o chat
+    // Inicialização
     renderChat();
-    if(history.length === 1) addMessageUI('bot', "Olá. Eu sou Crisálida. Quem está aí?");
+    if(history.length === 1) {
+        addMessageUI('bot', "Sistemas online. Eu sou Crisálida. O que deseja?");
+    }
 </script>
 </body>
 </html>
