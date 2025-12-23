@@ -1,47 +1,48 @@
 // api/chat.js
 export default async function handler(req, res) {
-  // Apenas aceita requisições POST
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: { message: 'Method not allowed' } });
+    return res.status(405).json({ error: { message: 'Método não permitido' } });
   }
 
-  // Pega a chave das Variáveis de Ambiente do Vercel
-  const apiKey = process.env.GROK_API_KEY;
+  // Pega a chave e remove qualquer espaço acidental que o Vercel possa ter incluído
+  const apiKey = process.env.GROK_API_KEY ? process.env.GROK_API_KEY.trim() : null;
 
-  // Verifica se a chave existe
   if (!apiKey) {
-    return res.status(500).json({ error: { message: 'ERRO: A variável GROK_API_KEY não foi configurada no Vercel.' } });
+    return res.status(500).json({ error: { message: 'Variável GROK_API_KEY não encontrada no Vercel.' } });
   }
 
   try {
-    const { messages, model, stream, temperature } = req.body;
+    const { messages, temperature } = req.body;
 
     const response = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`
+        "Authorization": `Bearer ${apiKey}` // O erro "Incorrect API key" costuma ser aqui
       },
       body: JSON.stringify({
-        messages,
-        model: model || "grok-beta",
-        stream: stream || false,
-        temperature: temperature || 0.7
+        // Trocando para 'grok-2' que é o modelo estável atual
+        model: "grok-2", 
+        messages: messages,
+        temperature: temperature || 0.7,
+        stream: false
       })
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      // Se a API da xAI der erro, repassa o erro mantendo a estrutura
-      return res.status(response.status).json(data);
+      // Se a xAI retornar erro, enviamos o detalhe real para o seu chat
+      return res.status(response.status).json({ 
+        error: { 
+          message: data.error?.message || `Erro da xAI: ${response.statusText}` 
+        } 
+      });
     }
 
     return res.status(200).json(data);
 
   } catch (error) {
-    console.error("Erro no servidor:", error);
-    // Retorna erro formatado corretamente
-    return res.status(500).json({ error: { message: `Erro interno do servidor: ${error.message}` } });
+    return res.status(500).json({ error: { message: `Falha no Servidor: ${error.message}` } });
   }
 }
