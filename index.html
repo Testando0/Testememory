@@ -377,9 +377,8 @@
         const micBtn = document.getElementById('mic-btn');
         const voiceStatus = document.getElementById('voice-status');
 
-        // URLs das APIs - Alterado para apontar para a rota segura da Vercel
+        // URLs das APIs
         const CHAT_API_URL = "/api/chat";
-        const GROK_API_KEY = ""; // Não é mais necessária no HTML, agora fica segura no servidor
         
         // CORSPROXY.IO: Codifica a URL base da Vreden e encapsula
         const VREDEN_API_ENDPOINT = "https://api.vreden.my.id/api/v1/download/play/audio?query=";
@@ -438,7 +437,7 @@
 
             // 2. Remover negrito/itálico Markdown (**) e (*)
             cleaned = cleaned.replace(/\*\*/g, '');
-            cleaned = cleaned.replace(/\*/g, '');
+            cleaned = cleaned.replace(/\*\*/g, '');
 
             // 3. Remover códigos e headers (`texto` e #)
             cleaned = cleaned.replace(/`/g, '');
@@ -897,7 +896,6 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
-                        // Authorization removido do frontend para segurança
                     },
                     body: JSON.stringify({
                         model: "grok-beta",
