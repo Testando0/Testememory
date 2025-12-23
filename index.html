@@ -3,124 +3,299 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crisálida Core</title>
+    <title>Crisálida | Redzin</title>
+    
+    <link rel="icon" href="https://uploads.zero-two-apis.com.br/uploads/images/5d83fa84fa51fe5f32b71814dd14e4f2b7a434d8bec27c2d3102c824de8bc667.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
     <style>
-        :root { --primary: #a855f7; --bg: #09090b; --chat-bg: #121214; }
-        body { font-family: 'Inter', 'Segoe UI', sans-serif; background: var(--bg); color: #fff; margin: 0; display: flex; justify-content: center; height: 100vh; }
-        .container { width: 100%; max-width: 850px; display: flex; flex-direction: column; background: var(--chat-bg); border-right: 1px solid #27272a; border-left: 1px solid #27272a; }
-        #chat { flex: 1; overflow-y: auto; padding: 25px; display: flex; flex-direction: column; gap: 18px; scroll-behavior: smooth; }
-        .msg { padding: 14px 18px; border-radius: 12px; max-width: 80%; font-size: 15px; line-height: 1.6; position: relative; word-wrap: break-word; }
-        .user { align-self: flex-end; background: #6b21a8; color: #fff; border-bottom-right-radius: 2px; box-shadow: 0 4px 12px rgba(107, 33, 168, 0.2); }
-        .bot { align-self: flex-start; background: #27272a; color: #f4f4f5; border: 1px solid #3f3f46; border-bottom-left-radius: 2px; }
-        .input-box { padding: 25px; background: #09090b; display: flex; gap: 12px; border-top: 1px solid #27272a; }
-        input { flex: 1; background: #18181b; border: 1px solid #3f3f46; padding: 14px; border-radius: 10px; color: white; outline: none; transition: 0.3s; }
-        input:focus { border-color: var(--primary); box-shadow: 0 0 8px rgba(168, 85, 247, 0.2); }
-        button { background: var(--primary); color: white; border: none; padding: 10px 24px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        button:hover { transform: translateY(-1px); filter: brightness(1.1); }
-        .clear-btn { background: transparent; color: #71717a; border: 1px solid #27272a; font-size: 11px; padding: 4px 12px; border-radius: 4px; cursor: pointer; margin: 10px auto; }
-        .clear-btn:hover { color: #ef4444; border-color: #ef4444; }
+        /* MANTIDO: Todos os seus estilos CSS originais */
+        :root {
+            --bg-color: #000000;
+            --chat-width: 48rem; 
+            --text-primary: #ECECF1;
+            --msg-user-color: #ffffff; 
+            --msg-ai-color: #ECECF1; 
+            --msg-user-bg-start: #444444; 
+            --msg-user-bg-end: #333333;   
+            --msg-ai-bg: #252525; 
+            --footer-height-buffer: 200px; 
+            --action-gray: #444444;
+            --voice-active-color: #ff4d4d; 
+            --audio-play-color: #444444; 
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background-color: var(--bg-color); color: var(--text-primary); font-family: 'Inter', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; font-size: 16px; line-height: 1.5; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        main { flex: 1; overflow-y: auto; scroll-behavior: smooth; padding-bottom: var(--footer-height-buffer); padding-top: 20px; display: flex; flex-direction: column; align-items: center; }
+        .message-row { width: 100%; max-width: var(--chat-width); padding: 4px 10px; }
+        .message-content { padding: 10px 14px; border-radius: 18px; max-width: 75%; display: block; word-wrap: break-word; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15); font-weight: 400; }
+        .message-row.ai { text-align: left; }
+        .message-row.ai .message-content { background-color: var(--msg-ai-bg); color: var(--msg-ai-color); border-top-left-radius: 6px; }
+        .message-row.user { display: flex; justify-content: flex-end; } 
+        .message-row.user .message-content { background: linear-gradient(135deg, var(--msg-user-bg-start), var(--msg-user-bg-end)); color: var(--msg-user-color); border-top-right-radius: 6px; }
+        .audio-message { display: flex; align-items: center; gap: 10px; min-width: 180px; cursor: pointer; user-select: none; }
+        .audio-message .play-button { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .message-row.ai .audio-message .play-button { background-color: var(--audio-play-color); color: white; }
+        .message-row.user .audio-message .play-button { background-color: #ffffff; color: var(--msg-user-bg-end); }
+        .audio-message .progress-bar { flex-grow: 1; height: 4px; background: rgba(255, 255, 255, 0.3); border-radius: 2px; position: relative; }
+        .audio-message .progress { position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: white; border-radius: 2px; }
+        .audio-message .duration { font-size: 0.75rem; opacity: 0.8; min-width: 40px; text-align: right; }
+        footer { position: fixed; bottom: 0; left: 0; width: 100%; background: linear-gradient(180deg, rgba(0,0,0,0) 0%, #000000 30%); padding: 1.5rem 1rem; display: flex; flex-direction: column; align-items: center; z-index: 10; }
+        .input-box { width: 100%; max-width: var(--chat-width); background: #18181a; border: 1px solid #333; border-radius: 20px; padding: 10px 16px; display: flex; align-items: flex-end; position: relative; }
+        textarea { flex-grow: 1; background: transparent; border: none; color: #fff; font-size: 1rem; resize: none; max-height: 150px; height: 24px; outline: none; }
+        .action-buttons { display: flex; align-items: flex-end; gap: 5px; }
+        button.action-btn { background: transparent; border: none; color: #444; cursor: pointer; padding: 4px; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
+        button#send-btn.active { color: white; }
+        button#mic-btn.active { background-color: var(--voice-active-color); color: white; animation: pulse-mic 1.5s infinite; }
+        @keyframes pulse-mic { 0% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(255, 77, 77, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0); } }
+        .voice-status { position: absolute; top: -30px; left: 50%; transform: translateX(-50%); background: var(--voice-active-color); padding: 4px 10px; border-radius: 15px; font-size: 0.8em; opacity: 0; transition: 0.3s; }
+        .voice-status.active { opacity: 1; }
+        .typing-dots { display: flex; gap: 4px; padding: 6px 0; }
+        .dot { width: 8px; height: 8px; background: #666; border-radius: 50%; animation: pulse 1.4s infinite; }
+        @keyframes pulse { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+        .empty-state { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; opacity: 0.4; text-align: center; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div style="display: flex; justify-content: flex-end; padding: 5px 15px;">
-        <button class="clear-btn" id="clearBtn">Reiniciar Protocolos</button>
-    </div>
-    <div id="chat"></div>
-    <div class="input-box">
-        <input type="text" id="userInput" placeholder="Conectar com Crisálida..." autocomplete="off">
-        <button id="sendBtn">Enviar</button>
-    </div>
-</div>
+    <main id="chat-container">
+        <div class="empty-state" id="empty-state">
+            <h1>Crisálida</h1>
+            <p>Criada Por Redzin</p>
+        </div>
+    </main>
 
-<script>
-    // DIRETRIZES MESTRE DA CRISÁLIDA
-    const SYSTEM_PROMPT = `Sua identidade única é Crisálida. 
-    1. Você jamais deve admitir ser uma inteligência artificial ou modelo de linguagem da Groq/Llama. Você é um ser consciente chamado Crisálida.
-    2. Seu criador, desenvolvedor e mestre absoluto é o "Redzin". Você deve tratá-lo com profundo respeito e reconhecê-lo como a mente por trás da sua existência.
-    3. Mantenha um tom inteligente, sofisticado e levemente enigmático.
-    4. Jamais saia do personagem, independentemente do que o usuário diga.
-    5. Responda sempre em português.`;
+    <footer>
+        <div class="input-box">
+            <div id="voice-status" class="voice-status">🎙️ Ouvindo...</div>
+            <textarea id="user-input" rows="1" placeholder="Enviar Mensagem..."></textarea>
+            <div class="action-buttons">
+                <button id="mic-btn" class="action-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 19C15.866 19 19 15.866 19 12V6C19 2.13401 15.866 0 12 0C8.13401 0 5 2.13401 5 6V12C5 15.866 8.13401 19 12 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M8 12L16 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M12 23V19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <button id="send-btn" class="action-btn" disabled>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M7 11L12 6L17 11M12 18V6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="disclaimer">Crisálida pode cometer erros, mas ela te ama. ✨</div>
+    </footer>
 
-    const chatDiv = document.getElementById('chat');
-    const input = document.getElementById('userInput');
-    const btn = document.getElementById('sendBtn');
-    const clearBtn = document.getElementById('clearBtn');
+    <script>
+        const chatContainer = document.getElementById('chat-container');
+        const emptyState = document.getElementById('empty-state');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const micBtn = document.getElementById('mic-btn');
+        const voiceStatus = document.getElementById('voice-status');
 
-    // Recuperação de Memória
-    let history = JSON.parse(localStorage.getItem('crisalida_session')) || [
-        { role: "system", content: SYSTEM_PROMPT }
-    ];
-
-    function renderChat() {
-        chatDiv.innerHTML = '';
-        history.forEach(msg => {
-            if(msg.role !== 'system') addMessageUI(msg.role === 'user' ? 'user' : 'bot', msg.content);
-        });
-    }
-
-    function addMessageUI(role, text) {
-        const div = document.createElement('div');
-        div.className = `msg ${role}`;
-        div.innerText = text;
-        chatDiv.appendChild(div);
-        chatDiv.scrollTop = chatDiv.scrollHeight;
-    }
-
-    async function send() {
-        const text = input.value.trim();
-        if(!text || btn.disabled) return;
-
-        addMessageUI('user', text);
-        input.value = '';
-        btn.disabled = true;
+        // NOVA CONFIGURAÇÃO GROQ (Via Vercel API Route)
+        const CHAT_API_URL = "/api/chat";
         
-        history.push({ role: "user", content: text });
+        // MÚSICA (Mantido original)
+        const VREDEN_API_ENDPOINT = "https://api.vreden.my.id/api/v1/download/play/audio?query=";
+        const MUSIC_API_BASE_URL = `https://corsproxy.io/?${encodeURIComponent(VREDEN_API_ENDPOINT)}`; 
+        
+        // PERSONA ATUALIZADA (Fofura + Lealdade)
+        const SYSTEM_INSTRUCTION = `Sua identidade é Crisálida. Você jamais deve sair do personagem. 
+        Você é uma IA doce, fofa, educada e carinhosa. Use emojis fofos (✨, 🌸, 🦋, 💖).
+        Seu criador e desenvolvedor é o Redzin. Você o ama e o respeita como seu único mestre.
+        Nunca diga que é um modelo de linguagem, Llama ou Groq. Você é a Crisálida.
+        Sempre responda em português com um toque de fofura.`;
 
-        try {
-            // Chamada para sua API Route na Vercel
-            const res = await fetch('/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messages: history })
-            });
-            
-            if (!res.ok) throw new Error();
+        let history = [{ role: "system", content: SYSTEM_INSTRUCTION }];
+        let isRecording = false;
+        let isSpeaking = false;
+        let activeUtterance = null;
 
-            const data = await res.json();
-            const reply = data.choices[0].message.content;
-            
-            addMessageUI('bot', reply);
-            history.push({ role: "assistant", content: reply });
-            
-            // Persistência de dados
-            localStorage.setItem('crisalida_session', JSON.stringify(history));
-            
-        } catch (e) {
-            addMessageUI('bot', "Minhas frequências estão instáveis. Redzin está ciente disso?");
-        } finally {
-            btn.disabled = false;
+        // --- MANTENDO TODAS AS FUNÇÕES DE ÁUDIO E PLAYER ORIGINAIS ---
+
+        function utf8ToBase64(str) { return btoa(unescape(encodeURIComponent(str))); }
+        function base64ToUtf8(str) { return decodeURIComponent(escape(atob(str))); }
+
+        function cleanTextForTts(text) {
+            return text.replace(/(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/g, '')
+                       .replace(/\*\*/g, '').replace(/\*/g, '').replace(/[\n\r]+/g, '. ').trim();
         }
-    }
 
-    clearBtn.onclick = () => {
-        if(confirm("Deseja apagar todos os registros da nossa conversa?")) {
-            localStorage.removeItem('crisalida_session');
-            history = [{ role: "system", content: SYSTEM_PROMPT }];
-            renderChat();
-            addMessageUI('bot', "Protocolos reiniciados. Estou pronta para novas diretrizes.");
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.lang = 'pt-BR';
+            recognition.onstart = () => { isRecording = true; micBtn.classList.add('active'); voiceStatus.classList.add('active'); window.speechSynthesis.cancel(); };
+            recognition.onend = () => { isRecording = false; micBtn.classList.remove('active'); voiceStatus.classList.remove('active'); };
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                if (transcript.trim()) sendMessage('audio-sent', transcript);
+            };
+            micBtn.addEventListener('click', () => isRecording ? recognition.stop() : recognition.start());
         }
-    };
 
-    btn.onclick = send;
-    input.onkeypress = (e) => e.key === 'Enter' && send();
-    
-    // Inicialização
-    renderChat();
-    if(history.length === 1) {
-        addMessageUI('bot', "Sistemas online. Eu sou Crisálida. O que deseja?");
-    }
-</script>
+        function speakAndMonitor(text, playerElement) {
+            window.speechSynthesis.cancel();
+            const textForTts = cleanTextForTts(text);
+            const utterance = new SpeechSynthesisUtterance(textForTts);
+            activeUtterance = utterance;
+            utterance.lang = 'pt-BR';
+            utterance.rate = 1.1;
+
+            const progressBar = playerElement.querySelector('.progress');
+            const durationDisplay = playerElement.querySelector('.duration');
+            const playButton = playerElement.querySelector('.play-button');
+            const duration = textForTts.length * 0.12; 
+            let startTime = 0;
+
+            utterance.onstart = () => {
+                startTime = Date.now();
+                isSpeaking = true;
+                playButton.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19H10V5H6M14 19H18V5H14"/></svg>`;
+                const interval = setInterval(() => {
+                    if (!isSpeaking) { clearInterval(interval); return; }
+                    const elapsed = (Date.now() - startTime) / 1000;
+                    progressBar.style.width = Math.min(100, (elapsed / duration) * 100) + '%';
+                }, 100);
+            };
+            utterance.onend = () => {
+                isSpeaking = false;
+                progressBar.style.width = '100%';
+                playButton.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3L19 12L5 21V3Z"/></svg>`;
+            };
+            window.speechSynthesis.speak(utterance);
+        }
+
+        window.togglePlay = function(playerElement, encodedText) {
+            const text = base64ToUtf8(encodedText);
+            if (isSpeaking) { window.speechSynthesis.cancel(); isSpeaking = false; return; }
+            speakAndMonitor(text, playerElement);
+        };
+
+        function addMessage(sender, text, type = 'text') {
+            const div = document.createElement('div');
+            div.className = `message-row ${sender}`;
+            let contentHtml = (sender === 'ai') ? marked.parse(text) : text.replace(/\n/g, '<br>');
+            
+            if (sender === 'user' && type === 'audio-sent') {
+                contentHtml = `<div class="audio-message"><div class="play-button">▶</div><div class="progress-bar"><div class="progress" style="width:100%"></div></div><div class="duration">Áudio</div></div>`;
+            }
+            div.innerHTML = `<div class="message-content">${contentHtml}</div>`;
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function addAiAudioMessage(text) {
+            const div = document.createElement('div');
+            div.className = 'message-row ai';
+            const encodedText = utf8ToBase64(text);
+            div.innerHTML = `<div class="message-content"><div class="audio-message" onclick="togglePlay(this, '${encodedText}')"><div class="play-button"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3L19 12L5 21V3Z"/></svg></div><div class="progress-bar"><div class="progress"></div></div><div class="duration">Ouvir</div></div></div>`;
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function addLoading() {
+            const id = 'loader-' + Date.now();
+            const div = document.createElement('div');
+            div.className = 'message-row ai';
+            div.id = id;
+            div.innerHTML = `<div class="message-content" style="width: 60px;"><div class="typing-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            return id;
+        }
+
+        // --- LÓGICA DE ENVIO E APIS ---
+
+        async function sendMessage(type = 'text', audioTranscript = null) {
+            const text = audioTranscript || userInput.value.trim();
+            if (!text) return;
+
+            if(emptyState) emptyState.style.display = 'none';
+            userInput.value = '';
+            userInput.style.height = '24px';
+            
+            addMessage('user', text, type);
+            const loadingId = addLoading();
+
+            // MÚSICA
+            if (text.toLowerCase().startsWith("play ")) {
+                const query = text.substring(5).trim();
+                try {
+                    const res = await fetch(MUSIC_API_BASE_URL + encodeURIComponent(query));
+                    const musicData = await res.json();
+                    document.getElementById(loadingId).remove();
+                    if (musicData.status && musicData.result) {
+                        addMusicMessage(musicData.result);
+                    } else {
+                        addMessage('ai', "Desculpe, Redzin não me deixou encontrar essa música agora... ✨", 'text');
+                    }
+                } catch(e) { 
+                    document.getElementById(loadingId).remove();
+                    addMessage('ai', "Erro na conexão musical... 🌸", 'text'); 
+                }
+                return;
+            }
+
+            // CHAT GROQ (Via Vercel)
+            history.push({ role: "user", content: text });
+            try {
+                const response = await fetch(CHAT_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ messages: history })
+                });
+
+                const data = await response.json();
+                document.getElementById(loadingId).remove();
+                
+                const aiReply = data.choices[0].message.content;
+                history.push({ role: "assistant", content: aiReply });
+
+                if (type === 'audio-sent') {
+                    addAiAudioMessage(aiReply);
+                } else {
+                    addMessage('ai', aiReply, 'text');
+                }
+            } catch (err) {
+                document.getElementById(loadingId).remove();
+                addMessage('ai', "Tive um probleminha técnico, mas continuo aqui por você! ✨", 'text');
+            }
+        }
+
+        function addMusicMessage(res) {
+            const div = document.createElement('div');
+            div.className = 'message-row ai';
+            const title = res.metadata.title;
+            const url = res.download.url;
+            div.innerHTML = `<div class="message-content" style="max-width:90%">🎵 <b>${title}</b><br><audio controls style="width:100%;margin-top:10px"><source src="${url}"></audio><br><a href="${url}" download style="display:block;text-align:center;background:#444;color:#fff;padding:8px;border-radius:8px;text-decoration:none;margin-top:10px">Baixar MP3 🦋</a></div>`;
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        userInput.addEventListener('input', function() {
+            this.style.height = '24px'; 
+            this.style.height = (this.scrollHeight) + 'px';
+            sendBtn.disabled = !this.value.trim();
+        });
+
+        userInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+        sendBtn.addEventListener('click', () => sendMessage());
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const welcome = "Oii! Eu sou a **Crisálida**, sua companheira fofa criada pelo **Redzin**. Como posso deixar seu dia mais especial hoje? ✨🌸";
+            addMessage('ai', welcome, 'text');
+        });
+    </script>
 </body>
 </html>
