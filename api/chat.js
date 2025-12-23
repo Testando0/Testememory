@@ -2,14 +2,15 @@
 export default async function handler(req, res) {
   // Apenas aceita requisições POST
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: { message: 'Method not allowed' } });
   }
 
   // Pega a chave das Variáveis de Ambiente do Vercel
   const apiKey = process.env.GROK_API_KEY;
 
+  // Verifica se a chave existe
   if (!apiKey) {
-    return res.status(500).json({ error: 'Missing GROK_API_KEY environment variable' });
+    return res.status(500).json({ error: { message: 'ERRO: A variável GROK_API_KEY não foi configurada no Vercel.' } });
   }
 
   try {
@@ -32,12 +33,15 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     if (!response.ok) {
+      // Se a API da xAI der erro, repassa o erro mantendo a estrutura
       return res.status(response.status).json(data);
     }
 
     return res.status(200).json(data);
+
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    console.error("Erro no servidor:", error);
+    // Retorna erro formatado corretamente
+    return res.status(500).json({ error: { message: `Erro interno do servidor: ${error.message}` } });
   }
 }
