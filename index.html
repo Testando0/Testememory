@@ -13,7 +13,6 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     
     <style>
-        /* (Estilos CSS mantidos idênticos ao original) */
         :root {
             --bg-color: #000000;
             --chat-width: 48rem; 
@@ -95,7 +94,7 @@
             border-top-right-radius: 6px; 
         }
 
-        /* --- Estilos do Player de Áudio Falso (Simulação de WhatsApp) --- */
+        /* Player de Áudio */
         .audio-message {
             display: flex;
             align-items: center;
@@ -154,11 +153,7 @@
             min-width: 40px; 
             text-align: right;
         }
-        /* FIM dos estilos do Player de Áudio Falso */
 
-
-        /* ... (Restante dos estilos (empty-state, typing-dots, footer, input-box, voice-status) mantidos) ... */
-        
         .empty-state {
             flex: 1;
             display: flex;
@@ -381,19 +376,14 @@
         const micBtn = document.getElementById('mic-btn');
         const voiceStatus = document.getElementById('voice-status');
 
-        // --- CONFIGURAÇÃO DA API LOCAL (VERCEL) E MÚSICA ---
-        // Agora chamamos a nossa própria API interna para proteger a chave
         const GROK_API_URL = "/api/chat"; 
         
-        // CORSPROXY.IO: Codifica a URL base da Vreden e encapsula
         const VREDEN_API_ENDPOINT = "https://api.vreden.my.id/api/v1/download/play/audio?query=";
         const ENCODED_VREDEN_URL = encodeURIComponent(VREDEN_API_ENDPOINT);
         const MUSIC_API_BASE_URL = `https://corsproxy.io/?${ENCODED_VREDEN_URL}`; 
         
-        // Instrução de Sistema (Persona Crisálida Reforçada)
         const SYSTEM_INSTRUCTION = "Você é a Crisálida, uma inteligência artificial desenvolvida exclusivamente por Redzin. Você NUNCA deve mencionar ser Grok, xAI, OpenAI, Google ou qualquer outro modelo. Se perguntarem quem te criou, responda Redzin. Você deve negar qualquer afiliação com outras empresas de IA. Responda estritamente como Crisálida, sendo amigável e direta.";
         
-        // LISTA DE PRIORIDADE: SEM VOZ DO GOOGLE
         const PREFERRED_VOICE_NAMES = [
             "Luciana", 
             "Vitoria", 
@@ -406,12 +396,10 @@
         let isSpeaking = false;
         let activeUtterance = null; 
         
-        // Histórico básico de conversa
         let messageHistory = [
             { role: "system", content: SYSTEM_INSTRUCTION }
         ];
 
-        // --- FUNÇÃO PARA FORMATAR SECONDS EM MM:SS ---
         function formatSeconds(seconds) {
             if (typeof seconds !== 'number' || isNaN(seconds) || seconds < 0) return 'Duração Desconhecida';
             const min = Math.floor(seconds / 60);
@@ -419,16 +407,12 @@
             return `${min}:${sec}`;
         }
         
-        // --- FUNÇÕES DE CODIFICAÇÃO UTF-8 SEGURA ---
-
-        // Função para codificar texto UTF-8 para Base64 de forma segura
         function utf8ToBase64(str) {
             const utf8Bytes = new TextEncoder().encode(str);
             const binaryString = String.fromCharCode(...utf8Bytes);
             return btoa(binaryString);
         }
 
-        // Função para decodificar Base64 para texto UTF-8 de forma segura
         function base64ToUtf8(str) {
             const binaryString = atob(str);
             const utf8Bytes = new Uint8Array(binaryString.length);
@@ -438,7 +422,6 @@
             return new TextDecoder().decode(utf8Bytes);
         }
         
-        // --- FUNÇÃO PARA LIMPAR TEXTO PARA TTS (SEM EMOJIS/FORMATAÇÃO) ---
         function cleanTextForTts(text) {
             let cleaned = text;
             cleaned = cleaned.replace(/(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/g, '');
@@ -453,9 +436,6 @@
             return cleaned.trim();
         }
 
-        
-        // --- FUNÇÕES DE CHAT DE VOZ ---
-        
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition = null;
 
@@ -518,8 +498,6 @@
             micBtn.title = 'Seu navegador não suporta Reconhecimento de Fala.';
         }
 
-        
-        // --- FUNÇÃO PARA FALAR (TTS) E ATUALIZAR O PLAYER VISUAL ---
         function speakAndMonitor(text, playerElement) {
             if (!('speechSynthesis' in window)) {
                 playerElement.querySelector('.duration').textContent = 'TTS Não Suportado';
@@ -605,8 +583,6 @@
         
         window.speechSynthesis.onvoiceschanged = () => {};
 
-        // --- ADIÇÃO DE MENSAGENS VISUAIS DE ÁUDIO E TEXTO ---
-        
         function addAiAudioMessage(text) {
             const div = document.createElement('div');
             div.className = `message-row ai`;
@@ -677,8 +653,6 @@
             chatContainer.appendChild(div);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
-        
-        // --- FUNÇÕES DE MÚSICA (VREDEN) ---
 
         function addMusicMessage(resultData) { 
             const div = document.createElement('div');
@@ -716,8 +690,6 @@
             chatContainer.appendChild(div);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
-
-        // --- FUNÇÕES DE CONTROLE ---
 
         function addLoading() {
             const id = 'loader-' + Date.now();
@@ -793,13 +765,11 @@
             
             messageHistory.push({ role: "user", content: text });
 
-            // --- Checagens de Identidade e Bloqueio ---
             const identityKeywords = ["qual seu nome", "quem é você", "diga seu nome", "vc se chama", "seu nome", "nome dela", "que ia é você", "que ia é", "quem te criou", "quem é seu dono", "quem te desenvolveu", "quem te fez", "quem é o criador", "criador", "sua criadora", "seu criador", "quem te programou", "quem te inventou", "quem é redzin"];
             if (identityKeywords.some(keyword => lowerText.includes(keyword)) && lowerText.length < 50) {
-                 // Deixamos a API responder, mas a instrução já está no system prompt
+                 
             }
 
-            // --- Checagem de Música ---
             if (lowerText.startsWith("play ")) {
                 
                 const loadingId = addLoading();
@@ -839,7 +809,6 @@
                 }
             }
 
-            // --- Chamada da API GROK (Via Vercel API Route) ---
             const loadingId = addLoading();
 
             try {
@@ -847,12 +816,10 @@
                      messageHistory = [messageHistory[0], ...messageHistory.slice(-10)];
                 }
 
-                // Agora chamamos nosso backend interno, sem enviar a KEY
                 const response = await fetch(GROK_API_URL, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
-                        // Sem Authorization aqui, a key está no servidor
                     },
                     body: JSON.stringify({
                         messages: messageHistory,
@@ -862,12 +829,14 @@
                     })
                 });
                 
+                const resData = await response.json();
+
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(`Erro na API: ${errorData.error ? errorData.error.message : response.statusText}`);
+                    // Correção: Verifica se existe error.message ou se error é string
+                    const errorMsg = resData.error?.message || resData.error || response.statusText || "Erro Desconhecido";
+                    throw new Error(errorMsg);
                 }
 
-                const resData = await response.json();
                 const loader = document.getElementById(loadingId);
                 if(loader) loader.remove();
 
