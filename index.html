@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Inteligente Vercel</title>
+    <style>
+        :root { --primary: #00ff88; --bg: #0b0e11; --chat-bg: #15191d; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: #fff; margin: 0; display: flex; justify-content: center; height: 100vh; }
+        .container { width: 100%; max-width: 800px; display: flex; flex-direction: column; background: var(--chat-bg); border-left: 1px solid #333; border-right: 1px solid #333; }
+        #chat { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .msg { padding: 12px 18px; border-radius: 12px; max-width: 85%; font-size: 15px; line-height: 1.5; }
+        .user { align-self: flex-end; background: #005c4b; color: #fff; }
+        .bot { align-self: flex-start; background: #202c33; color: #e9edef; border: 1px solid #333; }
+        .input-box { padding: 20px; background: #1b2025; display: flex; gap: 10px; }
+        input { flex: 1; background: #2a3339; border: none; padding: 12px; border-radius: 8px; color: white; outline: none; }
+        button { background: var(--primary); color: #000; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="chat">
+        <div class="msg bot">Olá! Sou o Llama-3.3 70B, o modelo mais inteligente da Groq. Como posso ajudar?</div>
+    </div>
+    <div class="input-box">
+        <input type="text" id="userInput" placeholder="Escreva sua mensagem...">
+        <button id="sendBtn">Enviar</button>
+    </div>
+</div>
+
+<script>
+    let history = [{ role: "system", content: "Você é um assistente inteligente e útil em português." }];
+
+    const chatDiv = document.getElementById('chat');
+    const input = document.getElementById('userInput');
+    const btn = document.getElementById('sendBtn');
+
+    function addMessage(role, text) {
+        const div = document.createElement('div');
+        div.className = `msg ${role}`;
+        div.innerText = text;
+        chatDiv.appendChild(div);
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+    }
+
+    async function send() {
+        const text = input.value.trim();
+        if(!text || btn.disabled) return;
+
+        addMessage('user', text);
+        input.value = '';
+        btn.disabled = true;
+        history.push({ role: "user", content: text });
+
+        try {
+            const res = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ messages: history })
+            });
+            
+            const data = await res.json();
+            const reply = data.choices[0].message.content;
+            
+            addMessage('bot', reply);
+            history.push({ role: "assistant", content: reply });
+        } catch (e) {
+            addMessage('bot', "Erro ao processar. Tente novamente.");
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    btn.onclick = send;
+    input.onkeypress = (e) => e.key === 'Enter' && send();
+</script>
+</body>
+</html>
