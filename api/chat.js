@@ -4,25 +4,25 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: { message: 'Método não permitido' } });
   }
 
-  // Pega a chave e remove qualquer espaço acidental que o Vercel possa ter incluído
+  // Pegando a chave do Groq (Llama)
   const apiKey = process.env.GROK_API_KEY ? process.env.GROK_API_KEY.trim() : null;
 
   if (!apiKey) {
-    return res.status(500).json({ error: { message: 'Variável GROK_API_KEY não encontrada no Vercel.' } });
+    return res.status(500).json({ error: { message: 'Variável GROK_API_KEY não configurada no Vercel.' } });
   }
 
   try {
     const { messages, temperature } = req.body;
 
-    const response = await fetch("https://api.x.ai/v1/chat/completions", {
+    // URL da Groq para usar o modelo Llama 3
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}` // O erro "Incorrect API key" costuma ser aqui
+        "Authorization": `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        // Trocando para 'grok-2' que é o modelo estável atual
-        model: "grok-2", 
+        model: "llama-3.3-70b-versatile", // O modelo Llama mais potente e gratuito
         messages: messages,
         temperature: temperature || 0.7,
         stream: false
@@ -32,10 +32,9 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     if (!response.ok) {
-      // Se a xAI retornar erro, enviamos o detalhe real para o seu chat
       return res.status(response.status).json({ 
         error: { 
-          message: data.error?.message || `Erro da xAI: ${response.statusText}` 
+          message: data.error?.message || `Erro na Groq: ${response.statusText}` 
         } 
       });
     }
