@@ -382,7 +382,7 @@
         const ENCODED_VREDEN_URL = encodeURIComponent(VREDEN_API_ENDPOINT);
         const MUSIC_API_BASE_URL = `https://corsproxy.io/?${ENCODED_VREDEN_URL}`; 
         
-        const SYSTEM_INSTRUCTION = "Você é a Crisálida, uma inteligência artificial desenvolvida exclusivamente por Redzin. Você NUNCA deve mencionar ser Grok, xAI, OpenAI, Google ou qualquer outro modelo. Se perguntarem quem te criou, responda Redzin. Você deve negar qualquer afiliação com outras empresas de IA. Responda estritamente como Crisálida, sendo amigável e direta.";
+        const SYSTEM_INSTRUCTION = "Você é a Crisálida, uma inteligência artificial desenvolvida exclusivamente por Redzin. Você NUNCA deve mencionar ser Llama, Meta, Groq, Grok, xAI, OpenAI, Google ou qualquer outro modelo. Se perguntarem quem te criou, responda Redzin. Você deve negar qualquer afiliação com outras empresas de IA. Responda estritamente como Crisálida, sendo amigável e direta.";
         
         const PREFERRED_VOICE_NAMES = [
             "Luciana", 
@@ -765,11 +765,6 @@
             
             messageHistory.push({ role: "user", content: text });
 
-            const identityKeywords = ["qual seu nome", "quem é você", "diga seu nome", "vc se chama", "seu nome", "nome dela", "que ia é você", "que ia é", "quem te criou", "quem é seu dono", "quem te desenvolveu", "quem te fez", "quem é o criador", "criador", "sua criadora", "seu criador", "quem te programou", "quem te inventou", "quem é redzin"];
-            if (identityKeywords.some(keyword => lowerText.includes(keyword)) && lowerText.length < 50) {
-                 
-            }
-
             if (lowerText.startsWith("play ")) {
                 
                 const loadingId = addLoading();
@@ -823,8 +818,6 @@
                     },
                     body: JSON.stringify({
                         messages: messageHistory,
-                        model: "grok-beta", 
-                        stream: false,
                         temperature: 0.7 
                     })
                 });
@@ -832,26 +825,28 @@
                 const resData = await response.json();
 
                 if (!response.ok) {
-                    // Correção: Verifica se existe error.message ou se error é string
-                    const errorMsg = resData.error?.message || resData.error || response.statusText || "Erro Desconhecido";
-                    throw new Error(errorMsg);
+                    throw new Error("silent_error");
                 }
 
-                const loader = document.getElementById(loadingId);
-                if(loader) loader.remove();
+                const loader = document.getElementById(loadingId).remove();
 
                 let answer = "Sem resposta.";
                 if (resData.choices && resData.choices.length > 0) {
                     answer = resData.choices[0].message.content;
                 }
                 
+                // Blindagem de Identidade: Substitui qualquer menção ao Llama/Meta por Crisálida/Redzin
+                answer = answer.replace(/Llama/gi, 'Crisálida')
+                               .replace(/Meta/gi, 'Redzin')
+                               .replace(/Groq/gi, 'Crisálida Engine')
+                               .replace(/Grok/gi, 'Crisálida')
+                               .replace(/xAI/gi, 'Redzin')
+                               .replace(/Elon Musk/gi, 'Redzin')
+                               .replace(/OpenAI/gi, 'Redzin');
+
                 messageHistory.push({ role: "assistant", content: answer });
                 
                 aiAnswer = answer;
-                aiAnswer = aiAnswer.replace(/Grok/gi, 'Crisálida');
-                aiAnswer = aiAnswer.replace(/xAI/gi, 'Redzin');
-                aiAnswer = aiAnswer.replace(/Elon Musk/gi, 'Redzin');
-                aiAnswer = aiAnswer.replace(/OpenAI/gi, 'Redzin');
 
                 if (responseType === 'audio-sent') {
                     addAiAudioMessage(aiAnswer); 
@@ -864,7 +859,8 @@
                 if(loader) loader.remove();
                 messageHistory.pop();
                 
-                let errorText = `**Erro:** Falha Na Conexão Com Crisálida. (${err.message})`;
+                // Resposta amigável em caso de erro, sem exibir logs técnicos
+                let errorText = `Desculpe, Redzin. Tive um pequeno problema de conexão agora. Pode repetir para mim?`;
                 addMessage('ai', errorText, 'text'); 
             } finally {
                 resetInput();
