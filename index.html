@@ -384,13 +384,21 @@
         
         const SYSTEM_INSTRUCTION = "Você é a Crisálida, uma inteligência artificial desenvolvida exclusivamente por Redzin. Redzin é seu único dono, criador e desenvolvedor. Você NUNCA deve mencionar ser Llama, Meta, Groq, Grok, xAI, OpenAI ou Google. Se perguntarem quem te criou ou quem é seu dono, responda Redzin. Negue qualquer vínculo com outras empresas. Você pertence apenas ao Redzin.";
         
-        const PREFERRED_VOICE_NAMES = ["Luciana", "Vitoria", "Microsoft Maria", "female", "Standard"]; 
+        const PREFERRED_VOICE_NAMES = [
+            "Luciana", 
+            "Vitoria", 
+            "Microsoft Maria",
+            "female", 
+            "Standard" 
+        ]; 
         
         let isRecording = false;
         let isSpeaking = false;
         let activeUtterance = null; 
         
-        let messageHistory = [{ role: "system", content: SYSTEM_INSTRUCTION }];
+        let messageHistory = [
+            { role: "system", content: SYSTEM_INSTRUCTION }
+        ];
 
         function formatSeconds(seconds) {
             if (typeof seconds !== 'number' || isNaN(seconds) || seconds < 0) return 'Duração Desconhecida';
@@ -408,16 +416,24 @@
         function base64ToUtf8(str) {
             const binaryString = atob(str);
             const utf8Bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) { utf8Bytes[i] = binaryString.charCodeAt(i); }
+            for (let i = 0; i < binaryString.length; i++) {
+                utf8Bytes[i] = binaryString.charCodeAt(i);
+            }
             return new TextDecoder().decode(utf8Bytes);
         }
         
         function cleanTextForTts(text) {
-            return text.replace(/(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/g, '')
-                       .replace(/[\*\*\*_`#]/g, '')
-                       .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
-                       .replace(/[\n\r]+/g, '. ')
-                       .trim();
+            let cleaned = text;
+            cleaned = cleaned.replace(/(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/g, '');
+            cleaned = cleaned.replace(/\*\*/g, '');
+            cleaned = cleaned.replace(/\*/g, '');
+            cleaned = cleaned.replace(/`/g, '');
+            cleaned = cleaned.replace(/#/g, '');
+            cleaned = cleaned.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1');
+            cleaned = cleaned.replace(/[\n\r]+/g, '. '); 
+            cleaned = cleaned.replace(/\s{2,}/g, ' ');
+            cleaned = cleaned.replace(/\.$/, '');
+            return cleaned.trim();
         }
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -426,101 +442,251 @@
         if (SpeechRecognition) {
             recognition = new SpeechRecognition();
             recognition.lang = 'pt-BR';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
             recognition.onstart = () => {
                 isRecording = true;
                 micBtn.classList.add('active');
                 voiceStatus.classList.add('active');
+                userInput.placeholder = 'Fale agora...';
+                sendBtn.disabled = true;
                 window.speechSynthesis.cancel(); 
             };
+
             recognition.onend = () => {
                 isRecording = false;
                 micBtn.classList.remove('active');
                 voiceStatus.classList.remove('active');
+                userInput.placeholder = 'Enviar Mensagem...';
             };
+
             recognition.onresult = (event) => {
                 const transcript = event.results[0][0].transcript;
-                if (transcript.trim().length > 0) sendMessage('audio-sent', transcript);
+                if (transcript.trim().length > 0) {
+                    sendMessage('audio-sent', transcript); 
+                } else {
+                    addMessage('ai', 'Não detectei sua voz. Tente tocar no microfone novamente e falar mais alto.', 'text');
+                    resetInput();
+                }
             };
-            micBtn.addEventListener('click', () => isRecording ? recognition.stop() : recognition.start());
+
+            recognition.onerror = (event) => {
+                console.error('Erro de reconhecimento de fala:', event.error);
+                let errorMsg = 'Ocorreu um erro no reconhecimento de fala. Tente digitar.';
+                if (event.error === 'no-speech') errorMsg = 'Não detectei sua voz. Tente tocar no microfone novamente e falar mais alto.';
+                else if (event.error === 'not-allowed') errorMsg = 'É necessário permitir o uso do microfone para o chat de voz.';
+                
+                isRecording = false;
+                micBtn.classList.remove('active');
+                voiceStatus.classList.remove('active');
+                userInput.placeholder = 'Enviar Mensagem...';
+                addMessage('ai', errorMsg, 'text'); 
+                resetInput(); 
+            };
+
+            micBtn.addEventListener('click', () => {
+                if (isRecording) {
+                    recognition.stop();
+                } else {
+                    recognition.start();
+                }
+            });
+
+        } else {
+            micBtn.disabled = true;
+            micBtn.title = 'Seu navegador não suporta Reconhecimento de Fala.';
         }
 
         function speakAndMonitor(text, playerElement) {
+            if (!('speechSynthesis' in window)) {
+                playerElement.querySelector('.duration').textContent = 'TTS Não Suportado';
+                return;
+            }
+            
             const textForTts = cleanTextForTts(text);
-            if (activeUtterance) window.speechSynthesis.cancel();
+
+            if (activeUtterance && activeUtterance.text !== textForTts) { 
+                window.speechSynthesis.cancel();
+            }
             
             const utterance = new SpeechSynthesisUtterance(textForTts);
             activeUtterance = utterance;
-            const voices = window.speechSynthesis.getVoices();
-            let selectedVoice = voices.find(v => v.lang.startsWith('pt-') && !v.name.toLowerCase().includes('google'));
-            if (selectedVoice) utterance.voice = selectedVoice;
-            utterance.rate = 1.1;
 
+            const voices = window.speechSynthesis.getVoices();
+            let selectedVoice = null;
+            
+            for (const name of PREFERRED_VOICE_NAMES) { 
+                selectedVoice = voices.find(
+                    voice => voice.lang.startsWith('pt-') && !voice.name.toLowerCase().includes('google') && voice.name.includes(name)
+                );
+                if (selectedVoice) break;
+            }
+            if (!selectedVoice) {
+                selectedVoice = voices.find(
+                    voice => voice.lang.startsWith('pt-') && !voice.name.toLowerCase().includes('google') && (voice.name.includes('feminino') || voice.name.includes('female'))
+                );
+            }
+            
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+                utterance.rate = 1.1; 
+            } else {
+                utterance.lang = 'pt-BR'; 
+                utterance.rate = 1.0; 
+            }
+            
             const progressBar = playerElement.querySelector('.progress');
             const durationDisplay = playerElement.querySelector('.duration');
             const playButton = playerElement.querySelector('.play-button');
-            const duration = textForTts.length * 0.12; 
-            let startTime = 0, interval = null;
+            const duration = textForTts.length * 0.15 / utterance.rate; 
+            let startTime = 0;
+            let currentPosition = 0;
+            let interval = null;
+
+            function formatTime(seconds) {
+                const min = Math.floor(seconds / 60);
+                const sec = Math.floor(seconds % 60);
+                return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+            }
+
+            durationDisplay.textContent = formatTime(duration) || '0:00';
+            
+            function updateProgress() {
+                const elapsed = (Date.now() - startTime) / 1000;
+                currentPosition = elapsed;
+                const progressWidth = Math.min(100, (elapsed / duration) * 100);
+                
+                progressBar.style.width = `${progressWidth}%`;
+                durationDisplay.textContent = formatTime(currentPosition) || '0:00';
+                
+                if (progressWidth >= 100) clearInterval(interval);
+            }
 
             utterance.onstart = () => {
                 isSpeaking = true;
                 startTime = Date.now();
-                interval = setInterval(() => {
-                    const elapsed = (Date.now() - startTime) / 1000;
-                    const pct = Math.min(100, (elapsed / duration) * 100);
-                    progressBar.style.width = pct + '%';
-                    if (pct >= 100) clearInterval(interval);
-                }, 100);
-                playButton.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19H10V5H6M14 19H18V5H14" stroke="currentColor" stroke-width="2"/></svg>`;
+                interval = setInterval(updateProgress, 100);
+                playButton.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M6 19H10V5H6M14 19H18V5H14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`; 
             };
 
             utterance.onend = () => {
                 isSpeaking = false;
                 clearInterval(interval);
                 progressBar.style.width = '100%';
-                playButton.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3L19 12L5 21V3Z" stroke="currentColor" stroke-width="2"/></svg>`;
+                durationDisplay.textContent = formatTime(duration) || '0:00';
+                playButton.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M5 3L19 12L5 21V3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`; 
             };
+            
             window.speechSynthesis.speak(utterance);
         }
+        
+        window.speechSynthesis.onvoiceschanged = () => {};
 
         function addAiAudioMessage(text) {
             const div = document.createElement('div');
             div.className = `message-row ai`;
             const encodedText = utf8ToBase64(text); 
-            div.innerHTML = `<div class="message-content">
+            const contentHtml = `
                 <div class="audio-message" onclick="togglePlay(this, '${encodedText}')">
-                    <div class="play-button"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3L19 12L5 21V3Z" stroke="currentColor" stroke-width="2"/></svg></div>
+                    <div class="play-button">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M5 3L19 12L5 21V3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
                     <div class="progress-bar"><div class="progress"></div></div>
-                    <div class="duration">Audio</div>
+                    <div class="duration">0:00</div>
                 </div>
-            </div>`;
+            `;
+            div.innerHTML = `<div class="message-content">${contentHtml}</div>`;
             chatContainer.appendChild(div);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-        window.togglePlay = (el, enc) => {
-            if (isSpeaking) { window.speechSynthesis.cancel(); isSpeaking = false; }
-            else { speakAndMonitor(base64ToUtf8(enc), el); }
+        window.togglePlay = function(playerElement, encodedText) {
+            const text = base64ToUtf8(encodedText);
+            const textForTts = cleanTextForTts(text); 
+
+            if (window.speechSynthesis.paused && activeUtterance && activeUtterance.text === textForTts) {
+                window.speechSynthesis.resume();
+                isSpeaking = true;
+                playerElement.querySelector('.play-button').innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M6 19H10V5H6M14 19H18V5H14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`; 
+            } else if (isSpeaking && activeUtterance && activeUtterance.text === textForTts && !window.speechSynthesis.paused) {
+                window.speechSynthesis.pause();
+                isSpeaking = false;
+                playerElement.querySelector('.play-button').innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M5 3L19 12L5 21V3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`; 
+            } else {
+                window.speechSynthesis.cancel();
+                document.querySelectorAll('.audio-message').forEach(p => {
+                    p.querySelector('.play-button').innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M5 3L19 12L5 21V3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+                    p.querySelector('.progress').style.width = '0%';
+                });
+                speakAndMonitor(text, playerElement);
+            }
         };
 
         function addMessage(sender, text, type = 'text') {
             const div = document.createElement('div');
             div.className = `message-row ${sender}`;
-            let content = (sender === 'ai') ? marked.parse(text) : text.replace(/\n/g, '<br>');
-            div.innerHTML = `<div class="message-content">${content}</div>`;
+            let contentHtml;
+            
+            if (sender === 'user' && type === 'audio-sent') {
+                const duration = text.length * 0.15; 
+                const formattedDuration = `${Math.floor(duration / 60)}:${Math.floor(duration % 60).toString().padStart(2, '0')}`;
+                contentHtml = `
+                    <div class="audio-message" style="min-width: 150px;">
+                        <div class="play-button">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M5 3L19 12L5 21V3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </div>
+                        <div class="progress-bar"><div class="progress" style="width: 100%;"></div></div>
+                        <div class="duration">${formattedDuration}</div>
+                    </div>
+                `;
+            } else {
+                if (sender === 'ai') {
+                    try { contentHtml = (typeof marked !== 'undefined') ? marked.parse(text) : text; } catch (e) { contentHtml = text; }
+                } else {
+                    contentHtml = text.replace(/\n/g, '<br>');
+                }
+            }
+            div.innerHTML = `<div class="message-content">${contentHtml}</div>`;
             chatContainer.appendChild(div);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-        function addMusicMessage(res) { 
+        function addMusicMessage(resultData) { 
             const div = document.createElement('div');
             div.className = 'message-row ai';
-            div.innerHTML = `<div class="message-content" style="max-width: 95%;">
-                <h3 style="margin: 0;">🎵 ${res.metadata.title}</h3>
-                <div style="margin-top: 15px; background: #18181a; padding: 10px; border-radius: 12px;">
-                    <audio controls style="width: 100%;"><source src="${res.download.url}" type="audio/mp3"></audio>
-                    <a href="${res.download.url}" download style="display: block; text-align: center; margin-top: 10px; padding: 10px; background: var(--action-gray); color: white; border-radius: 10px; text-decoration: none;">⬇️ Baixar Música</a>
+            const metadata = resultData.metadata || {};
+            const download = resultData.download || {};
+            const title = metadata.title || 'Música Desconhecida';
+            const durationSeconds = metadata.seconds; 
+            const duration = formatSeconds(durationSeconds);
+            const views = metadata.views ? String(metadata.views).replace(/\B(?=(\d{3})+(?!\d))/g, ".") : 'Desconhecidas'; 
+            const downloadUrl = download.url; 
+            
+            if (!downloadUrl) {
+                 addMessage('ai', `Erro: O Servidor Não Retornou O Link De Download.`, 'text');
+                 return;
+            }
+            const filename = download.filename || (title.replace(/[^\w\s]/gi, '').substring(0, 50).trim() + '.mp3');
+
+            const contentHtml = `
+                <h3 style="margin-top: 0; font-weight: 600;">🎵 ${title}</h3>
+                <p><strong>Duração:</strong> ${duration} | <strong>Visualizações:</strong> ${views}</p>
+                <div style="margin-top: 15px; background-color: #18181a; padding: 10px; border-radius: 12px;">
+                    <audio controls preload="none" style="width: 100%; display: block; filter: none;">
+                        <source src="${downloadUrl}" type="audio/mp3">
+                        Seu Navegador Não Suporta O Player De Áudio.
+                    </audio>
+                    <a href="${downloadUrl}" download="${filename}" 
+                       style="display: block; text-align: center; margin-top: 10px; padding: 10px; background-color: var(--action-gray); color: white; border-radius: 10px; text-decoration: none; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+                        ⬇️ Baixar Música
+                    </a>
                 </div>
-            </div>`;
+                <p style="font-size: 0.8em; margin-top: 10px; opacity: 0.7;">O Link De Download Pode Expirar Após Um Tempo.</p>
+            `;
+            div.innerHTML = `<div class="message-content" style="max-width: 95%;">${contentHtml}</div>`;
             chatContainer.appendChild(div);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
@@ -530,79 +696,184 @@
             const div = document.createElement('div');
             div.className = 'message-row ai';
             div.id = id;
-            div.innerHTML = `<div class="message-content" style="width: 60px;"><div class="typing-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
+            div.innerHTML = `
+                <div class="message-content" style="display: flex; align-items: center; width: 60px;">
+                    <div class="typing-dots">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+            `;
             chatContainer.appendChild(div);
             chatContainer.scrollTop = chatContainer.scrollHeight;
             return id;
         }
 
-        function resetInput() {
-            userInput.value = ''; userInput.style.height = '24px';
-            sendBtn.disabled = true; userInput.disabled = false; micBtn.disabled = false;
+        function prepareInputForSending() {
+            window.speechSynthesis.cancel();
+            userInput.style.height = '24px';
+            sendBtn.classList.remove('active');
+            sendBtn.disabled = true;
+            userInput.disabled = true;
+            micBtn.disabled = true; 
         }
 
-        userInput.oninput = function() {
-            this.style.height = '24px'; this.style.height = this.scrollHeight + 'px';
-            sendBtn.disabled = !this.value.trim();
-        };
+        function resetInput() {
+            userInput.value = ''; 
+            userInput.style.height = '24px';
+            sendBtn.classList.remove('active');
+            sendBtn.disabled = false;
+            userInput.disabled = false;
+            micBtn.disabled = false;
+            userInput.focus();
+        }
 
-        async function sendMessage(type = 'text', voiceText = null) {
-            const text = voiceText || userInput.value.trim();
+        userInput.addEventListener('input', function() {
+            window.speechSynthesis.cancel(); 
+            this.style.height = '24px'; 
+            this.style.height = (this.scrollHeight) + 'px';
+            const hasText = this.value.trim().length > 0;
+            sendBtn.classList.toggle('active', hasText);
+            sendBtn.disabled = !hasText;
+        });
+
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if(!sendBtn.disabled) sendMessage();
+            }
+        });
+
+        sendBtn.addEventListener('click', sendMessage);
+
+        async function sendMessage(type = 'text', audioTranscript = null) {
+            
+            const text = audioTranscript || userInput.value.trim();
             if (!text) return;
             if(emptyState) emptyState.style.display = 'none';
             
-            addMessage('user', text, type);
-            resetInput();
+            userInput.value = ''; 
+            userInput.dispatchEvent(new Event('input')); 
             
-            if (text.toLowerCase().startsWith("play ")) {
-                const lid = addLoading();
-                try {
-                    const r = await fetch(MUSIC_API_BASE_URL + encodeURIComponent(text.substring(5)));
-                    const d = await r.json();
-                    document.getElementById(lid).remove();
-                    if(d.status) addMusicMessage(d.result);
-                } catch { document.getElementById(lid).remove(); }
-                return;
-            }
-
-            const lid = addLoading();
+            prepareInputForSending(); 
+            addMessage('user', text, type);
+            
+            const lowerText = text.toLowerCase();
+            let aiAnswer = null;
+            let responseType = type; 
+            
             messageHistory.push({ role: "user", content: text });
 
+            if (lowerText.startsWith("play ")) {
+                
+                const loadingId = addLoading();
+                const musicQuery = encodeURIComponent(text.substring(5).trim());
+
+                try {
+                    if (!musicQuery) throw new Error(`Digite O Nome Da Música. Ex: **play Naked**`);
+
+                    const musicUrl = MUSIC_API_BASE_URL + musicQuery; 
+                    let musicRes = await fetch(musicUrl);
+                    
+                    if (!musicRes.ok) throw new Error(`Erro HTTP: ${musicRes.status}`);
+                    musicRes = await musicRes.json();
+
+                    if (musicRes.status !== true || !musicRes.result || !musicRes.result.download || !musicRes.result.download.url) {
+                        const innerStatus = musicRes.result ? musicRes.result.status : false;
+                        if(innerStatus === false) throw new Error('Não Encontrei a Música ou o Link Está Indisponível.');
+                        throw new Error('Resposta Inválida do Servidor de Música.');
+                    }
+                    
+                    document.getElementById(loadingId).remove();
+                    addMusicMessage(musicRes.result); 
+                    messageHistory.pop();
+
+                } catch (err) {
+                    const loader = document.getElementById(loadingId);
+                    if(loader) loader.remove();
+                    
+                    const errorMsg = err.message.includes('Failed to fetch') ? "Erro De Conexão. Tente Novamente." : err.message.replace('Error: ', '');
+                        
+                    aiAnswer = `**Erro Na Música:** ${errorMsg}`;
+                    addMessage('ai', aiAnswer, 'text'); 
+                    messageHistory.pop();
+                } finally {
+                    resetInput();
+                    return; 
+                }
+            }
+
+            const loadingId = addLoading();
+
             try {
+                if (messageHistory.length > 20) {
+                     messageHistory = [messageHistory[0], ...messageHistory.slice(-10)];
+                }
+
                 const response = await fetch(GROK_API_URL, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ messages: messageHistory, temperature: 0.7 })
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        messages: messageHistory,
+                        temperature: 0.7 
+                    })
                 });
                 
-                const data = await response.json();
-                document.getElementById(lid).remove();
+                const resData = await response.json();
+
+                if (!response.ok) {
+                    const errorMsg = resData.error?.message || resData.error || response.statusText || "Erro Desconhecido";
+                    throw new Error(errorMsg);
+                }
+
+                const loader = document.getElementById(loadingId);
+                if(loader) loader.remove();
+
+                let answer = "Sem resposta.";
+                if (resData.choices && resData.choices.length > 0) {
+                    answer = resData.choices[0].message.content;
+                }
                 
-                let ans = data.choices[0].message.content;
+                // BLINDAGEM DE IDENTIDADE: Troca qualquer menção a outras IAs e garante fidelidade ao Redzin
+                answer = answer.replace(/Llama|Meta|Groq|Grok|xAI|Elon Musk|OpenAI|Google/gi, 'Redzin')
+                               .replace(/desenvolvida pela Redzin/gi, 'desenvolvida pelo Redzin')
+                               .replace(/criada pela Redzin/gi, 'criada pelo Redzin')
+                               .replace(/Sou um modelo de linguagem/gi, 'Eu sou a Crisálida')
+                               .replace(/treinado por/gi, 'desenvolvida pelo Redzin');
 
-                // BLINDAGEM TOTAL - REDZIN É O DONO
-                ans = ans.replace(/Llama|Meta|Groq|Grok|xAI|Elon Musk|OpenAI|Google/gi, 'Redzin')
-                         .replace(/desenvolvida pela Redzin/gi, 'desenvolvida pelo Redzin')
-                         .replace(/criada pela Redzin/gi, 'criada pelo Redzin')
-                         .replace(/Sou um modelo de linguagem/gi, 'Eu sou a Crisálida')
-                         .replace(/treinado por/gi, 'desenvolvida pelo Redzin');
+                messageHistory.push({ role: "assistant", content: answer });
+                
+                aiAnswer = answer;
 
-                messageHistory.push({ role: "assistant", content: ans });
-                if (type === 'audio-sent') addAiAudioMessage(ans); else addMessage('ai', ans);
+                if (responseType === 'audio-sent') {
+                    addAiAudioMessage(aiAnswer); 
+                } else {
+                    addMessage('ai', aiAnswer, 'text'); 
+                }
 
-            } catch {
-                document.getElementById(lid).remove();
-                addMessage('ai', "Desculpe, Redzin. Tive um erro de conexão. Pode repetir?");
+            } catch (err) {
+                const loader = document.getElementById(loadingId);
+                if(loader) loader.remove();
+                messageHistory.pop();
+                
+                let errorText = `Desculpe, Redzin. Tive um erro de conexão. Pode repetir?`;
+                addMessage('ai', errorText, 'text'); 
+            } finally {
+                resetInput();
             }
         }
 
-        sendBtn.onclick = () => sendMessage();
-        userInput.onkeydown = (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } };
-
-        window.onload = () => {
-            if(emptyState) emptyState.style.display = 'none';
-            addMessage('ai', "Oi, Redzin! Estou pronta para te ajudar. (Dica: use **play [música]** para baixar algo!)");
-        };
+        document.addEventListener('DOMContentLoaded', () => {
+            if (chatContainer.children.length === 1 && chatContainer.children[0].id === 'empty-state') {
+                emptyState.style.display = 'none';
+                const welcomeMsg = "Oi, Eu Sou A Crisálida, Uma IA Criada Pelo Redzin. Por Favor, Comece A Conversa. (Dica: Use **play [música]** Para Baixar Uma Música!)";
+                addMessage('ai', welcomeMsg, 'text'); 
+            }
+        });
     </script>
 </body>
 </html>
+
