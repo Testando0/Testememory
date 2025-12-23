@@ -377,9 +377,9 @@
         const micBtn = document.getElementById('mic-btn');
         const voiceStatus = document.getElementById('voice-status');
 
-        // URLs das APIs
-        const CHAT_API_URL = "https://api.x.ai/v1/chat/completions";
-        const GROK_API_KEY = typeof process !== 'undefined' ? process.env.GROQ_API_KEY : ""; 
+        // URLs das APIs - Alterado para apontar para a rota segura da Vercel
+        const CHAT_API_URL = "/api/chat";
+        const GROK_API_KEY = ""; // Não é mais necessária no HTML, agora fica segura no servidor
         
         // CORSPROXY.IO: Codifica a URL base da Vreden e encapsula
         const VREDEN_API_ENDPOINT = "https://api.vreden.my.id/api/v1/download/play/audio?query=";
@@ -896,8 +896,8 @@
                 const req = await fetch(CHAT_API_URL, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${GROK_API_KEY}`
+                        'Content-Type': 'application/json'
+                        // Authorization removido do frontend para segurança
                     },
                     body: JSON.stringify({
                         model: "grok-beta",
