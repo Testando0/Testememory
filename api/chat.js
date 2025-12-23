@@ -1,4 +1,8 @@
 export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Método não permitido' });
+  }
+
   try {
     const response = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
@@ -12,6 +16,6 @@ export default async function handler(req, res) {
     const data = await response.json();
     return res.status(response.status).json(data);
   } catch (error) {
-    return res.status(500).json({ error: "Erro na comunicação com a API" });
+    return res.status(500).json({ error: "Falha interna no servidor de chat" });
   }
 }
