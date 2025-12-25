@@ -810,7 +810,6 @@
                      messageHistory = [messageHistory[0], ...messageHistory.slice(-10)];
                 }
 
-                // COMUNICAÇÃO CIRÚRGICA COM O BACKEND GEMMA 2
                 const response = await fetch(GROK_API_URL, {
                     method: "POST",
                     headers: {
@@ -835,13 +834,6 @@
                     answer = resData.choices[0].message.content;
                 }
                 
-                // BLINDAGEM DE IDENTIDADE REDZIN
-                answer = answer.replace(/Llama|Meta|Groq|Grok|xAI|Elon Musk|OpenAI|Google/gi, 'Redzin')
-                               .replace(/desenvolvida pela Redzin/gi, 'desenvolvida pelo Redzin')
-                               .replace(/criada pela Redzin/gi, 'criada pelo Redzin')
-                               .replace(/Sou um modelo de linguagem/gi, 'Eu sou a Crisálida')
-                               .replace(/treinado por/gi, 'desenvolvida pelo Redzin');
-
                 messageHistory.push({ role: "assistant", content: answer });
                 
                 aiAnswer = answer;
