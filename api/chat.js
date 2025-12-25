@@ -13,8 +13,7 @@ export default async function handler(req, res) {
         "Authorization": `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        // Alterado aqui conforme solicitado
-        model: "llama-4-maverick", 
+        model: "llama-3.3-70b-versatile",
         messages: messages,
         temperature: 0.7
       })
