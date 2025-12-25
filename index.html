@@ -94,7 +94,6 @@
             border-top-right-radius: 6px; 
         }
 
-        /* Player de Áudio */
         .audio-message {
             display: flex;
             align-items: center;
@@ -426,7 +425,7 @@
             let cleaned = text;
             cleaned = cleaned.replace(/(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/g, '');
             cleaned = cleaned.replace(/\*\*/g, '');
-            cleaned = cleaned.replace(/\*/g, '');
+            cleaned = cleaned.replace(/\*\*/g, '');
             cleaned = cleaned.replace(/`/g, '');
             cleaned = cleaned.replace(/#/g, '');
             cleaned = cleaned.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1');
@@ -811,22 +810,21 @@
                      messageHistory = [messageHistory[0], ...messageHistory.slice(-10)];
                 }
 
+                // COMUNICAÇÃO CIRÚRGICA COM O BACKEND GEMMA 2
                 const response = await fetch(GROK_API_URL, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        messages: messageHistory,
-                        temperature: 0.7 
+                        messages: messageHistory
                     })
                 });
                 
                 const resData = await response.json();
 
                 if (!response.ok) {
-                    const errorMsg = resData.error?.message || resData.error || response.statusText || "Erro Desconhecido";
-                    throw new Error(errorMsg);
+                    throw new Error("offline");
                 }
 
                 const loader = document.getElementById(loadingId);
@@ -837,7 +835,7 @@
                     answer = resData.choices[0].message.content;
                 }
                 
-                // BLINDAGEM DE IDENTIDADE: Troca qualquer menção a outras IAs e garante fidelidade ao Redzin
+                // BLINDAGEM DE IDENTIDADE REDZIN
                 answer = answer.replace(/Llama|Meta|Groq|Grok|xAI|Elon Musk|OpenAI|Google/gi, 'Redzin')
                                .replace(/desenvolvida pela Redzin/gi, 'desenvolvida pelo Redzin')
                                .replace(/criada pela Redzin/gi, 'criada pelo Redzin')
@@ -859,8 +857,7 @@
                 if(loader) loader.remove();
                 messageHistory.pop();
                 
-                let errorText = `Desculpe, Redzin. Tive um erro de conexão. Pode repetir?`;
-                addMessage('ai', errorText, 'text'); 
+                addMessage('ai', `Desculpe, Redzin. Tive um erro de conexão. Pode repetir?`, 'text'); 
             } finally {
                 resetInput();
             }
@@ -875,4 +872,4 @@
         });
     </script>
 </body>
-    </html>
+</html>
