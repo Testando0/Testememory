@@ -13,7 +13,7 @@ export default async function handler(req, res) {
                 "Authorization": `Bearer ${apiKey}`
             },
             body: JSON.stringify({
-                model: "deepseek-r1-distill-llama-70b",
+                model: "deepseek-r1-distill-llama-32b",
                 messages: [
                     { 
                         role: "system", 
