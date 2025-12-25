@@ -13,17 +13,24 @@ export default async function handler(req, res) {
         "Authorization": `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        // Atualizado para o modelo Gemma 2 do Google
+        model: "gemma2-9b-it", 
         messages: messages,
-        temperature: 0.7
+        // 0.8 dá um toque extra de naturalidade e criatividade
+        temperature: 0.8 
       })
     });
 
     const data = await response.json();
-    if (!response.ok) return res.status(response.status).json({ error: "offline" });
+    
+    if (!response.ok) {
+        console.error("Erro na API Groq:", data);
+        return res.status(response.status).json({ error: "offline" });
+    }
 
     return res.status(200).json(data);
   } catch (error) {
+    console.error("Erro no Servidor:", error);
     return res.status(500).json({ error: "offline" });
   }
 }
