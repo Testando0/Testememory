@@ -13,7 +13,7 @@ export default async function handler(req, res) {
         "Authorization": `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: "gemma2-9b-it",
+        model: "qwen/qwen3-32b",
         messages: messages,
         temperature: 0.7,
         max_tokens: 2048,
