@@ -1,6 +1,7 @@
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
+  // Garante que a chave da API esteja limpa
   const apiKey = process.env.GROK_API_KEY ? process.env.GROK_API_KEY.trim() : null;
 
   try {
@@ -16,21 +17,22 @@ export default async function handler(req, res) {
         model: "gemma2-9b-it",
         messages: messages,
         temperature: 0.7,
-        max_tokens: 1024
+        max_tokens: 2048, // Aumentado para suportar respostas maiores sem cortar
+        top_p: 1,
+        stream: false
       })
     });
 
     const data = await response.json();
     
-    // Se a Groq responder com erro, enviamos o seu erro padrão
     if (!response.ok) {
-        console.error("Erro Groq:", data);
+        console.error("Erro na API Groq:", data);
         return res.status(response.status).json({ error: "offline" });
     }
 
     return res.status(200).json(data);
   } catch (error) {
-    console.error("Erro Servidor:", error);
+    console.error("Erro de conexão no servidor:", error);
     return res.status(500).json({ error: "offline" });
   }
 }
