@@ -13,7 +13,7 @@ export default async function handler(req, res) {
                 "Authorization": `Bearer ${apiKey}`
             },
             body: JSON.stringify({
-                model: "openai/gpt-oss-120",
+                model: "openai/gpt-oss-120b",
                 messages: [
                     { 
                         role: "system", 
