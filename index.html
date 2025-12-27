@@ -339,10 +339,10 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: #0d161f; /* Fundo escuro estilo zap */
+            background-color: #0d161f; 
             background-image: linear-gradient(to bottom, #0d161f, #000000);
             z-index: 9999;
-            display: none; /* Escondido por padrao */
+            display: none; 
             flex-direction: column;
             align-items: center;
             justify-content: space-between;
@@ -426,7 +426,7 @@
 
         .call-btn.end {
             background-color: #ff3b30;
-            width: 70px; /* Um pouco maior */
+            width: 70px;
             height: 70px;
         }
 
@@ -646,7 +646,6 @@
                 if (isInCall) {
                     // Na call, o onend pode acontecer se o usuário ficar em silêncio
                     // Se não estivermos esperando resposta da IA (isSpeaking), reinicia o microfone
-                    // Se a IA estiver falando, o mic fica desligado e liga de novo no onend da fala dela
                     if (!isSpeaking && !isCallMuted) {
                         try { recognition.start(); } catch(e){}
                     } else {
@@ -681,10 +680,8 @@
 
             recognition.onerror = (event) => {
                 console.error('Erro de reconhecimento de fala:', event.error);
-                // Na call, ignoramos erros de 'no-speech' para manter o loop
                 if (isInCall) {
                     if (event.error === 'no-speech' || event.error === 'network') {
-                        // Apenas deixa o onend reiniciar
                         return;
                     }
                     if (event.error === 'not-allowed') {
@@ -716,7 +713,7 @@
         } else {
             micBtn.disabled = true;
             micBtn.title = 'Seu navegador não suporta Reconhecimento de Fala.';
-            document.getElementById('call-btn').style.display = 'none'; // Esconde botão de call se não suportar
+            document.getElementById('call-btn').style.display = 'none'; 
         }
 
         /* --- FUNÇÕES DE CONTROLE DA CALL --- */
@@ -731,7 +728,6 @@
             callMuteBtn.classList.remove('muted');
             callMuteBtn.querySelector('.slash').style.display = 'none';
             
-            // Inicia o loop
             recognition.start();
         }
 
@@ -750,13 +746,13 @@
             if (isCallMuted) {
                 callMuteBtn.classList.add('muted');
                 slash.style.display = 'block';
-                recognition.stop(); // Para de ouvir
+                recognition.stop(); 
                 callStatusText.textContent = "Microfone mudo";
                 callWave.classList.add('silent');
             } else {
                 callMuteBtn.classList.remove('muted');
                 slash.style.display = 'none';
-                try { recognition.start(); } catch(e){} // Volta a ouvir
+                try { recognition.start(); } catch(e){} 
                 callStatusText.textContent = "Ouvindo...";
             }
         }
@@ -843,11 +839,9 @@
                     progressBar.style.width = '100%';
                     durationDisplay.textContent = formatTime(duration) || '0:00';
                     playButton.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M5 3L19 12L5 21V3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`; 
-                    
-                    // Se estiver em call e terminar um audio do chat, não faz nada específico a não ser que o usuário tenha ativado a call enquanto ouvia
                 };
             } else {
-                // Modo Call (sem player visual, apenas áudio)
+                // Modo Call
                 utterance.onstart = () => {
                     isSpeaking = true;
                     if(isInCall) {
@@ -859,9 +853,9 @@
                     isSpeaking = false;
                     if(isInCall) {
                         callStatusText.textContent = "Ouvindo...";
-                        callWave.classList.remove('silent'); // Wave para de mexer mas fica visivel
+                        callWave.classList.remove('silent'); 
                         if(!isCallMuted) {
-                            try { recognition.start(); } catch(e){} // Reinicia microfone automaticamente
+                            try { recognition.start(); } catch(e){} 
                         }
                     }
                 };
@@ -1040,13 +1034,15 @@
             
             const text = audioTranscript || userInput.value.trim();
             if (!text) return;
-            if(emptyState) emptyState.style.display = 'none';
             
-            userInput.value = ''; 
-            userInput.dispatchEvent(new Event('input')); 
-            
-            prepareInputForSending(); 
-            addMessage('user', text, type);
+            // SÓ MOSTRA NO CHAT E LIMPA INPUT SE NÃO FOR CALL
+            if (type !== 'audio-call') {
+                if(emptyState) emptyState.style.display = 'none';
+                userInput.value = ''; 
+                userInput.dispatchEvent(new Event('input')); 
+                prepareInputForSending(); 
+                addMessage('user', text, type);
+            }
             
             const lowerText = text.toLowerCase();
             let aiAnswer = null;
@@ -1056,7 +1052,9 @@
 
             if (lowerText.startsWith("play ")) {
                 
-                const loadingId = addLoading();
+                const loadingId = type !== 'audio-call' ? addLoading() : null; // Loading visual só se não for call? Na call não precisa de visual loading no chat.
+                // Mas para manter simples, se for call, o loading aparece no overlay via texto 'Pensando'.
+
                 const musicQuery = encodeURIComponent(text.substring(5).trim());
 
                 try {
@@ -1074,18 +1072,24 @@
                         throw new Error('Resposta Inválida do Servidor de Música.');
                     }
                     
-                    document.getElementById(loadingId).remove();
+                    if (loadingId) document.getElementById(loadingId).remove();
+                    
+                    // MÚSICA SEMPRE APARECE NO CHAT, senão não tem como baixar
                     addMusicMessage(musicRes.result); 
                     messageHistory.pop();
 
                 } catch (err) {
-                    const loader = document.getElementById(loadingId);
-                    if(loader) loader.remove();
+                    if (loadingId) {
+                         const loader = document.getElementById(loadingId);
+                         if(loader) loader.remove();
+                    }
                     
                     const errorMsg = err.message.includes('Failed to fetch') ? "Erro De Conexão. Tente Novamente." : err.message.replace('Error: ', '');
                         
                     aiAnswer = `**Erro Na Música:** ${errorMsg}`;
-                    addMessage('ai', aiAnswer, 'text'); 
+                    
+                    if (type !== 'audio-call') addMessage('ai', aiAnswer, 'text'); 
+                    
                     messageHistory.pop();
                     if(isInCall) speakAndMonitor(aiAnswer);
                 } finally {
@@ -1094,7 +1098,7 @@
                 }
             }
 
-            const loadingId = addLoading();
+            const loadingId = type !== 'audio-call' ? addLoading() : null;
 
             try {
                 if (messageHistory.length > 20) {
@@ -1117,8 +1121,10 @@
                     throw new Error("offline");
                 }
 
-                const loader = document.getElementById(loadingId);
-                if(loader) loader.remove();
+                if (loadingId) {
+                    const loader = document.getElementById(loadingId);
+                    if(loader) loader.remove();
+                }
 
                 let answer = "Sem resposta.";
                 if (resData.choices && resData.choices.length > 0) {
@@ -1133,20 +1139,21 @@
                     // Audio normal (chat)
                     addAiAudioMessage(aiAnswer); 
                 } else if (responseType === 'audio-call') {
-                    // Audio call - não cria player visual, apenas fala e mantém texto
-                    addMessage('ai', aiAnswer, 'text');
-                    speakAndMonitor(aiAnswer); // null como segundo arg para modo invisível
+                    // Audio call - APENAS FALA
+                    speakAndMonitor(aiAnswer); 
                 } else {
                     addMessage('ai', aiAnswer, 'text'); 
                 }
 
             } catch (err) {
-                const loader = document.getElementById(loadingId);
-                if(loader) loader.remove();
+                if (loadingId) {
+                    const loader = document.getElementById(loadingId);
+                    if(loader) loader.remove();
+                }
                 messageHistory.pop();
                 
                 const errMsg = `Desculpe, Redzin. Tive um erro de conexão. Pode repetir?`;
-                addMessage('ai', errMsg, 'text'); 
+                if(type !== 'audio-call') addMessage('ai', errMsg, 'text'); 
                 if(isInCall) speakAndMonitor(errMsg);
             } finally {
                 resetInput();
