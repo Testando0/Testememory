@@ -31,7 +31,7 @@
 
         html, body {
             height: 100%;
-            height: 100dvh; /* Garante altura correta em mobile/apk */
+            height: 100dvh; 
         }
 
         body {
@@ -40,7 +40,7 @@
             font-family: 'Inter', sans-serif;
             display: flex;
             flex-direction: column;
-            overflow: hidden; /* Impede rolagem no corpo, apenas no main */
+            overflow: hidden; 
             font-size: 16px;
             line-height: 1.5;
         }
@@ -51,10 +51,10 @@
         ::-webkit-scrollbar-thumb:hover { background: #555; }
 
         main {
-            flex: 1; /* Ocupa todo o espaço sobrando */
-            overflow-y: auto; /* Apenas o chat rola */
+            flex: 1; 
+            overflow-y: auto; 
             scroll-behavior: smooth;
-            padding: 20px 0; /* Padding simples, sem o buffer gigante */
+            padding: 20px 0; 
             display: flex;
             flex-direction: column;
             align-items: center; 
@@ -167,7 +167,7 @@
             user-select: none;
             text-align: center;
             padding: 20px;
-            height: 100%; /* Garante centralização */
+            height: 100%; 
         }
         
         .empty-state h1 { font-size: 2rem; font-weight: 600; color: #fff; margin-bottom: 10px; }
@@ -199,15 +199,14 @@
         .message-content audio { background-color: #111111; border-radius: 8px; }
 
         footer {
-            /* Removido position: fixed para evitar bugs de layout em APK */
             width: 100%;
-            background: #000000; /* Fundo sólido para não misturar com mensagens rolando */
+            background: #000000; 
             padding: 1rem;
             display: flex;
             flex-direction: column;
             align-items: center;
             z-index: 10;
-            flex-shrink: 0; /* Impede que o rodapé encolha */
+            flex-shrink: 0; 
             border-top: 1px solid #1a1a1a;
         }
 
@@ -333,6 +332,135 @@
             opacity: 1;
         }
 
+        /* --- STYLES DA TELA DE CALL --- */
+        #call-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #0d161f; /* Fundo escuro estilo zap */
+            background-image: linear-gradient(to bottom, #0d161f, #000000);
+            z-index: 9999;
+            display: none; /* Escondido por padrao */
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 60px 20px 40px 20px;
+            color: white;
+        }
+
+        #call-overlay.active {
+            display: flex;
+        }
+
+        .call-header {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .call-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background-color: #333;
+            background-image: url('https://uploads.zero-two-apis.com.br/uploads/images/5d83fa84fa51fe5f32b71814dd14e4f2b7a434d8bec27c2d3102c824de8bc667.png');
+            background-size: cover;
+            background-position: center;
+            margin-bottom: 20px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            animation: breathe 3s infinite ease-in-out;
+        }
+
+        @keyframes breathe {
+            0%, 100% { box-shadow: 0 0 20px rgba(91, 143, 249, 0.2); transform: scale(1); }
+            50% { box-shadow: 0 0 40px rgba(91, 143, 249, 0.5); transform: scale(1.05); }
+        }
+
+        .call-status {
+            font-size: 1.1rem;
+            color: #aebac1;
+            margin-top: 10px;
+        }
+
+        .call-name {
+            font-size: 2rem;
+            font-weight: 600;
+        }
+
+        .call-controls {
+            display: flex;
+            gap: 40px;
+            align-items: center;
+            background: rgba(30, 30, 30, 0.8);
+            padding: 20px 30px;
+            border-radius: 40px;
+            backdrop-filter: blur(10px);
+        }
+
+        .call-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .call-btn:active {
+            transform: scale(0.95);
+        }
+
+        .call-btn.mute {
+            background-color: rgba(255,255,255,0.1);
+        }
+        .call-btn.mute.muted {
+            background-color: #fff;
+            color: #000;
+        }
+
+        .call-btn.end {
+            background-color: #ff3b30;
+            width: 70px; /* Um pouco maior */
+            height: 70px;
+        }
+
+        /* Visualizador de audio simples na call */
+        .wave-container {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 20px;
+        }
+        .wave-bar {
+            width: 6px;
+            background: #5B8FF9;
+            border-radius: 3px;
+            height: 10px;
+            animation: wave 1s infinite ease-in-out;
+        }
+        .wave-bar:nth-child(2) { animation-delay: 0.1s; }
+        .wave-bar:nth-child(3) { animation-delay: 0.2s; }
+        .wave-bar:nth-child(4) { animation-delay: 0.3s; }
+        .wave-bar:nth-child(5) { animation-delay: 0.4s; }
+
+        @keyframes wave {
+            0%, 100% { height: 10px; opacity: 0.5; }
+            50% { height: 40px; opacity: 1; }
+        }
+
+        .wave-container.silent .wave-bar {
+            animation: none;
+            height: 5px;
+            opacity: 0.3;
+        }
+
         @media (max-width: 768px) {
             body { font-size: 15px; }
             .message-row { padding: 4px 0; }
@@ -342,6 +470,36 @@
     </style>
 </head>
 <body>
+
+    <div id="call-overlay">
+        <div class="call-header">
+            <div style="display: flex; justify-content: center;">
+                <div class="call-avatar"></div>
+            </div>
+            <div class="call-name">Crisálida</div>
+            <div class="call-status" id="call-status-text">Conectando...</div>
+            <div class="wave-container silent" id="call-wave">
+                <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+            </div>
+        </div>
+        
+        <div class="call-controls">
+            <button class="call-btn mute" id="call-mute-btn" onclick="toggleCallMute()">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M19 10v2c0 3.31-2.69 6-6 6s-6-2.69-6-6v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 20v3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="slash" style="display:none;"/>
+                </svg>
+            </button>
+            
+            <button class="call-btn end" onclick="endCall()">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 9c-2.5 0-4.97 1.05-6.68 2.76l-1.93 1.93c-.39.39-.39 1.02 0 1.41l2.72 2.72c.2.2.51.2.71 0l2.36-2.36c.2-.2.32-.47.32-.75V11.5c0-.28.22-.5.5-.5h4c.28 0 .5.22.5.5v3.21c0 .28.12.55.32.75l2.36 2.36c.2.2.51.2.71 0l2.72-2.72c.39-.39.39-1.02 0-1.41l-1.93-1.93C16.97 10.05 14.5 9 12 9z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
 
     <main id="chat-container">
         <div class="empty-state" id="empty-state">
@@ -356,6 +514,12 @@
             <div id="voice-status" class="voice-status">🎙️ Ouvindo...</div>
             <textarea id="user-input" rows="1" placeholder="Enviar Mensagem..."></textarea>
             <div class="action-buttons">
+                <button id="call-btn" class="action-btn" title="Iniciar Chamada" onclick="startCall()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                
                 <button id="mic-btn" class="action-btn">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 19C15.866 19 19 15.866 19 12V6C19 2.13401 15.866 0 12 0C8.13401 0 5 2.13401 5 6V12C5 15.866 8.13401 19 12 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -381,6 +545,12 @@
         const micBtn = document.getElementById('mic-btn');
         const voiceStatus = document.getElementById('voice-status');
 
+        /* Elementos da Call */
+        const callOverlay = document.getElementById('call-overlay');
+        const callStatusText = document.getElementById('call-status-text');
+        const callWave = document.getElementById('call-wave');
+        const callMuteBtn = document.getElementById('call-mute-btn');
+
         const GROK_API_URL = "/api/chat"; 
         
         const VREDEN_API_ENDPOINT = "https://api.vreden.my.id/api/v1/download/play/audio?query=";
@@ -400,6 +570,10 @@
         let isRecording = false;
         let isSpeaking = false;
         let activeUtterance = null; 
+        
+        /* Variáveis da Call */
+        let isInCall = false;
+        let isCallMuted = false;
         
         let messageHistory = [
             { role: "system", content: SYSTEM_INSTRUCTION }
@@ -441,6 +615,7 @@
             return cleaned.trim();
         }
 
+        /* --- LÓGICA DE RECONHECIMENTO DE FALA --- */
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition = null;
 
@@ -452,42 +627,82 @@
 
             recognition.onstart = () => {
                 isRecording = true;
-                micBtn.classList.add('active');
-                voiceStatus.classList.add('active');
-                userInput.placeholder = 'Fale agora...';
-                sendBtn.disabled = true;
+                
+                if (isInCall) {
+                    callStatusText.textContent = "Ouvindo...";
+                    callWave.classList.remove('silent');
+                } else {
+                    micBtn.classList.add('active');
+                    voiceStatus.classList.add('active');
+                    userInput.placeholder = 'Fale agora...';
+                    sendBtn.disabled = true;
+                }
                 window.speechSynthesis.cancel(); 
             };
 
             recognition.onend = () => {
                 isRecording = false;
-                micBtn.classList.remove('active');
-                voiceStatus.classList.remove('active');
-                userInput.placeholder = 'Enviar Mensagem...';
+                
+                if (isInCall) {
+                    // Na call, o onend pode acontecer se o usuário ficar em silêncio
+                    // Se não estivermos esperando resposta da IA (isSpeaking), reinicia o microfone
+                    // Se a IA estiver falando, o mic fica desligado e liga de novo no onend da fala dela
+                    if (!isSpeaking && !isCallMuted) {
+                        try { recognition.start(); } catch(e){}
+                    } else {
+                         callStatusText.textContent = "Processando...";
+                         callWave.classList.add('silent');
+                    }
+                } else {
+                    micBtn.classList.remove('active');
+                    voiceStatus.classList.remove('active');
+                    userInput.placeholder = 'Enviar Mensagem...';
+                }
             };
 
             recognition.onresult = (event) => {
                 const transcript = event.results[0][0].transcript;
                 if (transcript.trim().length > 0) {
-                    sendMessage('audio-sent', transcript); 
+                    if (isInCall) {
+                        // Na call, envia direto
+                        sendMessage('audio-call', transcript);
+                        callStatusText.textContent = "Pensando...";
+                        callWave.classList.add('silent');
+                    } else {
+                        sendMessage('audio-sent', transcript); 
+                    }
                 } else {
-                    addMessage('ai', 'Não detectei sua voz. Tente tocar no microfone novamente e falar mais alto.', 'text');
-                    resetInput();
+                    if(!isInCall) {
+                        addMessage('ai', 'Não detectei sua voz. Tente tocar no microfone novamente e falar mais alto.', 'text');
+                        resetInput();
+                    }
                 }
             };
 
             recognition.onerror = (event) => {
                 console.error('Erro de reconhecimento de fala:', event.error);
-                let errorMsg = 'Ocorreu um erro no reconhecimento de fala. Tente digitar.';
-                if (event.error === 'no-speech') errorMsg = 'Não detectei sua voz. Tente tocar no microfone novamente e falar mais alto.';
-                else if (event.error === 'not-allowed') errorMsg = 'É necessário permitir o uso do microfone para o chat de voz.';
-                
-                isRecording = false;
-                micBtn.classList.remove('active');
-                voiceStatus.classList.remove('active');
-                userInput.placeholder = 'Enviar Mensagem...';
-                addMessage('ai', errorMsg, 'text'); 
-                resetInput(); 
+                // Na call, ignoramos erros de 'no-speech' para manter o loop
+                if (isInCall) {
+                    if (event.error === 'no-speech' || event.error === 'network') {
+                        // Apenas deixa o onend reiniciar
+                        return;
+                    }
+                    if (event.error === 'not-allowed') {
+                        endCall();
+                        alert('Permissão de microfone negada.');
+                    }
+                } else {
+                    let errorMsg = 'Ocorreu um erro no reconhecimento de fala. Tente digitar.';
+                    if (event.error === 'no-speech') errorMsg = 'Não detectei sua voz. Tente tocar no microfone novamente e falar mais alto.';
+                    else if (event.error === 'not-allowed') errorMsg = 'É necessário permitir o uso do microfone para o chat de voz.';
+                    
+                    isRecording = false;
+                    micBtn.classList.remove('active');
+                    voiceStatus.classList.remove('active');
+                    userInput.placeholder = 'Enviar Mensagem...';
+                    addMessage('ai', errorMsg, 'text'); 
+                    resetInput(); 
+                }
             };
 
             micBtn.addEventListener('click', () => {
@@ -501,11 +716,56 @@
         } else {
             micBtn.disabled = true;
             micBtn.title = 'Seu navegador não suporta Reconhecimento de Fala.';
+            document.getElementById('call-btn').style.display = 'none'; // Esconde botão de call se não suportar
         }
 
-        function speakAndMonitor(text, playerElement) {
+        /* --- FUNÇÕES DE CONTROLE DA CALL --- */
+        function startCall() {
+            if (!recognition) {
+                alert("Seu navegador não suporta chamadas de voz.");
+                return;
+            }
+            isInCall = true;
+            callOverlay.classList.add('active');
+            isCallMuted = false;
+            callMuteBtn.classList.remove('muted');
+            callMuteBtn.querySelector('.slash').style.display = 'none';
+            
+            // Inicia o loop
+            recognition.start();
+        }
+
+        function endCall() {
+            isInCall = false;
+            callOverlay.classList.remove('active');
+            recognition.stop();
+            window.speechSynthesis.cancel();
+            isSpeaking = false;
+        }
+
+        function toggleCallMute() {
+            isCallMuted = !isCallMuted;
+            const slash = callMuteBtn.querySelector('.slash');
+            
+            if (isCallMuted) {
+                callMuteBtn.classList.add('muted');
+                slash.style.display = 'block';
+                recognition.stop(); // Para de ouvir
+                callStatusText.textContent = "Microfone mudo";
+                callWave.classList.add('silent');
+            } else {
+                callMuteBtn.classList.remove('muted');
+                slash.style.display = 'none';
+                try { recognition.start(); } catch(e){} // Volta a ouvir
+                callStatusText.textContent = "Ouvindo...";
+            }
+        }
+
+        /* --- SÍNTESE DE VOZ --- */
+
+        function speakAndMonitor(text, playerElement = null) {
             if (!('speechSynthesis' in window)) {
-                playerElement.querySelector('.duration').textContent = 'TTS Não Suportado';
+                if(playerElement) playerElement.querySelector('.duration').textContent = 'TTS Não Suportado';
                 return;
             }
             
@@ -541,47 +801,71 @@
                 utterance.rate = 1.0; 
             }
             
-            const progressBar = playerElement.querySelector('.progress');
-            const durationDisplay = playerElement.querySelector('.duration');
-            const playButton = playerElement.querySelector('.play-button');
-            const duration = textForTts.length * 0.15 / utterance.rate; 
-            let startTime = 0;
-            let currentPosition = 0;
-            let interval = null;
+            // Se for audio no chat (com player)
+            if (playerElement) {
+                const progressBar = playerElement.querySelector('.progress');
+                const durationDisplay = playerElement.querySelector('.duration');
+                const playButton = playerElement.querySelector('.play-button');
+                const duration = textForTts.length * 0.15 / utterance.rate; 
+                let startTime = 0;
+                let currentPosition = 0;
+                let interval = null;
 
-            function formatTime(seconds) {
-                const min = Math.floor(seconds / 60);
-                const sec = Math.floor(seconds % 60);
-                return `${min}:${sec < 10 ? '0' : ''}${sec}`;
-            }
+                function formatTime(seconds) {
+                    const min = Math.floor(seconds / 60);
+                    const sec = Math.floor(seconds % 60);
+                    return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+                }
 
-            durationDisplay.textContent = formatTime(duration) || '0:00';
-            
-            function updateProgress() {
-                const elapsed = (Date.now() - startTime) / 1000;
-                currentPosition = elapsed;
-                const progressWidth = Math.min(100, (elapsed / duration) * 100);
-                
-                progressBar.style.width = `${progressWidth}%`;
-                durationDisplay.textContent = formatTime(currentPosition) || '0:00';
-                
-                if (progressWidth >= 100) clearInterval(interval);
-            }
-
-            utterance.onstart = () => {
-                isSpeaking = true;
-                startTime = Date.now();
-                interval = setInterval(updateProgress, 100);
-                playButton.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M6 19H10V5H6M14 19H18V5H14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`; 
-            };
-
-            utterance.onend = () => {
-                isSpeaking = false;
-                clearInterval(interval);
-                progressBar.style.width = '100%';
                 durationDisplay.textContent = formatTime(duration) || '0:00';
-                playButton.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M5 3L19 12L5 21V3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`; 
-            };
+                
+                function updateProgress() {
+                    const elapsed = (Date.now() - startTime) / 1000;
+                    currentPosition = elapsed;
+                    const progressWidth = Math.min(100, (elapsed / duration) * 100);
+                    
+                    progressBar.style.width = `${progressWidth}%`;
+                    durationDisplay.textContent = formatTime(currentPosition) || '0:00';
+                    
+                    if (progressWidth >= 100) clearInterval(interval);
+                }
+
+                utterance.onstart = () => {
+                    isSpeaking = true;
+                    startTime = Date.now();
+                    interval = setInterval(updateProgress, 100);
+                    playButton.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M6 19H10V5H6M14 19H18V5H14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`; 
+                };
+
+                utterance.onend = () => {
+                    isSpeaking = false;
+                    clearInterval(interval);
+                    progressBar.style.width = '100%';
+                    durationDisplay.textContent = formatTime(duration) || '0:00';
+                    playButton.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M5 3L19 12L5 21V3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`; 
+                    
+                    // Se estiver em call e terminar um audio do chat, não faz nada específico a não ser que o usuário tenha ativado a call enquanto ouvia
+                };
+            } else {
+                // Modo Call (sem player visual, apenas áudio)
+                utterance.onstart = () => {
+                    isSpeaking = true;
+                    if(isInCall) {
+                        callStatusText.textContent = "Falando...";
+                        callWave.classList.remove('silent');
+                    }
+                };
+                utterance.onend = () => {
+                    isSpeaking = false;
+                    if(isInCall) {
+                        callStatusText.textContent = "Ouvindo...";
+                        callWave.classList.remove('silent'); // Wave para de mexer mas fica visivel
+                        if(!isCallMuted) {
+                            try { recognition.start(); } catch(e){} // Reinicia microfone automaticamente
+                        }
+                    }
+                };
+            }
             
             window.speechSynthesis.speak(utterance);
         }
@@ -635,7 +919,7 @@
             div.className = `message-row ${sender}`;
             let contentHtml;
             
-            if (sender === 'user' && type === 'audio-sent') {
+            if (sender === 'user' && (type === 'audio-sent' || type === 'audio-call')) {
                 const duration = text.length * 0.15; 
                 const formattedDuration = `${Math.floor(duration / 60)}:${Math.floor(duration % 60).toString().padStart(2, '0')}`;
                 contentHtml = `
@@ -731,7 +1015,7 @@
             sendBtn.disabled = false;
             userInput.disabled = false;
             micBtn.disabled = false;
-            userInput.focus();
+            if(!isInCall) userInput.focus();
         }
 
         userInput.addEventListener('input', function() {
@@ -803,6 +1087,7 @@
                     aiAnswer = `**Erro Na Música:** ${errorMsg}`;
                     addMessage('ai', aiAnswer, 'text'); 
                     messageHistory.pop();
+                    if(isInCall) speakAndMonitor(aiAnswer);
                 } finally {
                     resetInput();
                     return; 
@@ -845,7 +1130,12 @@
                 aiAnswer = answer;
 
                 if (responseType === 'audio-sent') {
+                    // Audio normal (chat)
                     addAiAudioMessage(aiAnswer); 
+                } else if (responseType === 'audio-call') {
+                    // Audio call - não cria player visual, apenas fala e mantém texto
+                    addMessage('ai', aiAnswer, 'text');
+                    speakAndMonitor(aiAnswer); // null como segundo arg para modo invisível
                 } else {
                     addMessage('ai', aiAnswer, 'text'); 
                 }
@@ -855,7 +1145,9 @@
                 if(loader) loader.remove();
                 messageHistory.pop();
                 
-                addMessage('ai', `Desculpe, Redzin. Tive um erro de conexão. Pode repetir?`, 'text'); 
+                const errMsg = `Desculpe, Redzin. Tive um erro de conexão. Pode repetir?`;
+                addMessage('ai', errMsg, 'text'); 
+                if(isInCall) speakAndMonitor(errMsg);
             } finally {
                 resetInput();
             }
