@@ -383,7 +383,6 @@
             margin-top: 10px;
         }
         
-        /* NOVO: Timer da Call */
         .call-timer {
             font-size: 1rem;
             color: #ffffff;
@@ -400,7 +399,7 @@
 
         .call-controls {
             display: flex;
-            gap: 40px;
+            gap: 25px;
             align-items: center;
             background: rgba(30, 30, 30, 0.8);
             padding: 20px 30px;
@@ -432,6 +431,14 @@
         .call-btn.mute.muted {
             background-color: #fff;
             color: #000;
+        }
+        
+        .call-btn.share {
+            background-color: rgba(91, 143, 249, 0.3);
+            color: #fff;
+        }
+        .call-btn.share:hover {
+            background-color: rgba(91, 143, 249, 0.5);
         }
 
         .call-btn.end {
@@ -470,16 +477,47 @@
             height: 5px;
             opacity: 0.3;
         }
+        
+        /* Toast Notification */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 50px;
+            padding: 16px;
+            position: fixed;
+            z-index: 10000;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            font-size: 17px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            opacity: 0;
+            transition: opacity 0.5s, bottom 0.5s;
+        }
+
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+            bottom: 50px;
+        }
 
         @media (max-width: 768px) {
             body { font-size: 15px; }
             .message-row { padding: 4px 0; }
             footer { padding: 10px; }
             .input-box { border-radius: 25px; padding: 8px 14px; }
+            .call-controls { gap: 15px; padding: 15px 20px; }
+            .call-btn { width: 50px; height: 50px; }
+            .call-btn.end { width: 60px; height: 60px; }
         }
     </style>
 </head>
 <body>
+
+    <div id="toast">Link Copiado!</div>
 
     <div id="call-overlay">
         <div class="call-header">
@@ -497,7 +535,7 @@
         
         <div class="call-controls">
             <button class="call-btn mute" id="call-mute-btn" onclick="toggleCallMute()">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     <path d="M19 10v2c0 3.31-2.69 6-6 6s-6-2.69-6-6v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     <path d="M12 20v3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -505,6 +543,14 @@
                 </svg>
             </button>
             
+            <button class="call-btn share" id="call-invite-btn" onclick="inviteFriends()" title="Convidar Amigos">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <polyline points="16 6 12 2 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <line x1="12" y1="2" x2="12" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+
             <button class="call-btn end" onclick="endCall()">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 9c-2.5 0-4.97 1.05-6.68 2.76l-1.93 1.93c-.39.39-.39 1.02 0 1.41l2.72 2.72c.2.2.51.2.71 0l2.36-2.36c.2-.2.32-.47.32-.75V11.5c0-.28.22-.5.5-.5h4c.28 0 .5.22.5.5v3.21c0 .28.12.55.32.75l2.36 2.36c.2.2.51.2.71 0l2.72-2.72c.39-.39.39-1.02 0-1.41l-1.93-1.93C16.97 10.05 14.5 9 12 9z"/>
@@ -562,8 +608,9 @@
         const callStatusText = document.getElementById('call-status-text');
         const callWave = document.getElementById('call-wave');
         const callMuteBtn = document.getElementById('call-mute-btn');
+        const callInviteBtn = document.getElementById('call-invite-btn');
+        const toast = document.getElementById("toast");
         
-        // NOVO: Elemento do Timer
         const callTimerDisplay = document.getElementById('call-timer');
 
         const GROK_API_URL = "/api/chat"; 
@@ -589,6 +636,7 @@
         /* Variáveis da Call */
         let isInCall = false;
         let isCallMuted = false;
+        let isGroupMode = false; // Novo: Variável para controle de modo grupo
         
         // NOVO: Variáveis do Timer
         let callSeconds = 0;
@@ -597,6 +645,39 @@
         let messageHistory = [
             { role: "system", content: SYSTEM_INSTRUCTION }
         ];
+
+        function showToast(message) {
+            toast.innerText = message;
+            toast.className = "show";
+            setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
+        }
+
+        function inviteFriends() {
+            const currentUrl = window.location.href;
+            
+            // Ativa o modo grupo automaticamente ao convidar
+            isGroupMode = true;
+
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Conversar com Crisálida',
+                    text: 'Entre na call com a Crisálida!',
+                    url: currentUrl,
+                })
+                .then(() => {
+                    showToast("Modo Grupo Ativo: Fale 'Crisálida [texto]'");
+                    callStatusText.textContent = "Modo Grupo Ativo";
+                })
+                .catch((error) => console.log('Erro ao compartilhar', error));
+            } else {
+                navigator.clipboard.writeText(currentUrl).then(function() {
+                    showToast("Link Copiado! Modo Grupo Ativo: Fale 'Crisálida [texto]'");
+                    callStatusText.textContent = "Modo Grupo Ativo";
+                }, function(err) {
+                    showToast("Erro ao copiar link.");
+                });
+            }
+        }
 
         function formatSeconds(seconds) {
             if (typeof seconds !== 'number' || isNaN(seconds) || seconds < 0) return 'Duração Desconhecida';
@@ -648,7 +729,11 @@
                 isRecording = true;
                 
                 if (isInCall) {
-                    callStatusText.textContent = "Ouvindo...";
+                    if (isGroupMode) {
+                         callStatusText.textContent = "Ouvindo (Diga: Crisálida...)";
+                    } else {
+                         callStatusText.textContent = "Ouvindo...";
+                    }
                     callWave.classList.remove('silent');
                 } else {
                     micBtn.classList.add('active');
@@ -663,8 +748,6 @@
                 isRecording = false;
                 
                 if (isInCall) {
-                    // Na call, o onend pode acontecer se o usuário ficar em silêncio
-                    // Se não estivermos esperando resposta da IA (isSpeaking), reinicia o microfone
                     if (!isSpeaking && !isCallMuted) {
                         try { recognition.start(); } catch(e){}
                     } else {
@@ -682,10 +765,29 @@
                 const transcript = event.results[0][0].transcript;
                 if (transcript.trim().length > 0) {
                     if (isInCall) {
-                        // Na call, envia direto
-                        sendMessage('audio-call', transcript);
-                        callStatusText.textContent = "Pensando...";
-                        callWave.classList.add('silent');
+                        // LÓGICA DO MODO GRUPO (VERCEL CALL)
+                        if (isGroupMode) {
+                            // Verifica se começa com "Crisálida" ou "Crizálida" (case insensitive)
+                            const wakeWordRegex = /^(cris[áa]lida|criz[áa]lida)\b/i;
+                            
+                            if (wakeWordRegex.test(transcript)) {
+                                // Remove a palavra de ativação e envia o resto
+                                const command = transcript.replace(wakeWordRegex, "").trim();
+                                if (command.length > 0) {
+                                    sendMessage('audio-call', command);
+                                    callStatusText.textContent = "Pensando...";
+                                    callWave.classList.add('silent');
+                                }
+                            } else {
+                                // Ignora e continua ouvindo
+                                console.log("Ignorado (Modo Grupo):", transcript);
+                            }
+                        } else {
+                            // Modo normal (1x1)
+                            sendMessage('audio-call', transcript);
+                            callStatusText.textContent = "Pensando...";
+                            callWave.classList.add('silent');
+                        }
                     } else {
                         sendMessage('audio-sent', transcript); 
                     }
@@ -773,19 +875,21 @@
                 return;
             }
             isInCall = true;
+            isGroupMode = false; // Começa em modo normal
             callOverlay.classList.add('active');
             isCallMuted = false;
             callMuteBtn.classList.remove('muted');
             callMuteBtn.querySelector('.slash').style.display = 'none';
             
-            startCallTimer(); // Inicia o timer
+            startCallTimer(); 
             recognition.start();
         }
 
         function endCall() {
             isInCall = false;
+            isGroupMode = false;
             callOverlay.classList.remove('active');
-            stopCallTimer(); // Para o timer
+            stopCallTimer(); 
             recognition.stop();
             window.speechSynthesis.cancel();
             isSpeaking = false;
@@ -805,7 +909,7 @@
                 callMuteBtn.classList.remove('muted');
                 slash.style.display = 'none';
                 try { recognition.start(); } catch(e){} 
-                callStatusText.textContent = "Ouvindo...";
+                callStatusText.textContent = isGroupMode ? "Ouvindo (Diga: Crisálida...)" : "Ouvindo...";
             }
         }
 
@@ -904,7 +1008,7 @@
                 utterance.onend = () => {
                     isSpeaking = false;
                     if(isInCall) {
-                        callStatusText.textContent = "Ouvindo...";
+                        callStatusText.textContent = isGroupMode ? "Ouvindo (Diga: Crisálida...)" : "Ouvindo...";
                         callWave.classList.remove('silent'); 
                         if(!isCallMuted) {
                             try { recognition.start(); } catch(e){} 
@@ -1104,9 +1208,8 @@
 
             if (lowerText.startsWith("play ")) {
                 
-                const loadingId = type !== 'audio-call' ? addLoading() : null; // Loading visual só se não for call? Na call não precisa de visual loading no chat.
-                // Mas para manter simples, se for call, o loading aparece no overlay via texto 'Pensando'.
-
+                const loadingId = type !== 'audio-call' ? addLoading() : null; 
+                
                 const musicQuery = encodeURIComponent(text.substring(5).trim());
 
                 try {
