@@ -382,6 +382,16 @@
             color: #aebac1;
             margin-top: 10px;
         }
+        
+        /* NOVO: Timer da Call */
+        .call-timer {
+            font-size: 1rem;
+            color: #ffffff;
+            margin-top: 5px;
+            font-weight: 300;
+            opacity: 0.8;
+            font-variant-numeric: tabular-nums;
+        }
 
         .call-name {
             font-size: 2rem;
@@ -478,6 +488,8 @@
             </div>
             <div class="call-name">Crisálida</div>
             <div class="call-status" id="call-status-text">Conectando...</div>
+            <div class="call-timer" id="call-timer">00:00</div>
+            
             <div class="wave-container silent" id="call-wave">
                 <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
             </div>
@@ -550,6 +562,9 @@
         const callStatusText = document.getElementById('call-status-text');
         const callWave = document.getElementById('call-wave');
         const callMuteBtn = document.getElementById('call-mute-btn');
+        
+        // NOVO: Elemento do Timer
+        const callTimerDisplay = document.getElementById('call-timer');
 
         const GROK_API_URL = "/api/chat"; 
         
@@ -574,6 +589,10 @@
         /* Variáveis da Call */
         let isInCall = false;
         let isCallMuted = false;
+        
+        // NOVO: Variáveis do Timer
+        let callSeconds = 0;
+        let callTimerInterval = null;
         
         let messageHistory = [
             { role: "system", content: SYSTEM_INSTRUCTION }
@@ -716,6 +735,37 @@
             document.getElementById('call-btn').style.display = 'none'; 
         }
 
+        /* --- FUNÇÕES DE CONTROLE DO TIMER DA CALL --- */
+        function startCallTimer() {
+            callSeconds = 0;
+            callTimerDisplay.innerText = "00:00";
+            
+            if (callTimerInterval) clearInterval(callTimerInterval);
+            
+            callTimerInterval = setInterval(() => {
+                callSeconds++;
+                const mins = Math.floor(callSeconds / 60).toString().padStart(2, '0');
+                const secs = (callSeconds % 60).toString().padStart(2, '0');
+                
+                // Formato HH:MM:SS se passar de uma hora
+                if (callSeconds >= 3600) {
+                   const hrs = Math.floor(callSeconds / 3600).toString().padStart(2, '0');
+                   const remainingMins = Math.floor((callSeconds % 3600) / 60).toString().padStart(2, '0');
+                   callTimerDisplay.innerText = `${hrs}:${remainingMins}:${secs}`;
+                } else {
+                   callTimerDisplay.innerText = `${mins}:${secs}`;
+                }
+            }, 1000);
+        }
+
+        function stopCallTimer() {
+            if (callTimerInterval) {
+                clearInterval(callTimerInterval);
+                callTimerInterval = null;
+            }
+            callTimerDisplay.innerText = "00:00";
+        }
+
         /* --- FUNÇÕES DE CONTROLE DA CALL --- */
         function startCall() {
             if (!recognition) {
@@ -728,12 +778,14 @@
             callMuteBtn.classList.remove('muted');
             callMuteBtn.querySelector('.slash').style.display = 'none';
             
+            startCallTimer(); // Inicia o timer
             recognition.start();
         }
 
         function endCall() {
             isInCall = false;
             callOverlay.classList.remove('active');
+            stopCallTimer(); // Para o timer
             recognition.stop();
             window.speechSynthesis.cancel();
             isSpeaking = false;
